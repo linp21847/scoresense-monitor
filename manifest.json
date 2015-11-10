@@ -1,0 +1,36 @@
+{
+   "background": {
+      "scripts": [ 
+         "assets/js/jquery.min.js", 
+         "assets/js/background.js" 
+      ]
+   },
+   "content_scripts": [ {
+      "all_frames": true,
+      "js": [ 
+         "assets/js/jquery.min.js", 
+         "assets/js/content_script.js" ],
+      "matches": [ "https://members2.scoresense.com/#credit" ]
+   } ],
+   "browser_action": {
+          "default_icon": {
+            "19": "assets/img/favicon.png",
+            "38": "assets/img/favicon.png"
+          },
+          "default_title": "Credit Scroes",
+          "default_popup": "assets/html/popup.html"
+        },
+   "description": "Grab all info needed to calculate and export excel sheets file.",
+   "homepage_url": "https://members2.scoresense.com/",
+   "icons": {
+      "128": "assets/img/favicon.png",
+      "16": "assets/img/favicon.png",
+      "48": "assets/img/favicon.png",
+      "64": "assets/img/favicon.png"
+   },
+   "manifest_version": 2,
+   "name": "Credit Scores",
+   "options_page": "assets/html/options.html",
+   "permissions": [ "tabs", "https://members2.scoresense.com/", "storage" ],
+   "version": "0.0.1"
+}
