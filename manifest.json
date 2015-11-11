@@ -2,6 +2,7 @@
    "background": {
       "scripts": [ 
          "assets/js/jquery.min.js", 
+         "assets/js/common.js",
          "assets/js/background.js" 
       ]
    },
@@ -10,7 +11,10 @@
       "js": [ 
          "assets/js/jquery.min.js", 
          "assets/js/content_script.js" ],
-      "matches": [ "https://members2.scoresense.com/#credit" ]
+      "matches": [ 
+         "https://members2.scoresense.com/",
+         "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/*"
+      ]
    } ],
    "browser_action": {
           "default_icon": {
@@ -31,6 +35,11 @@
    "manifest_version": 2,
    "name": "Credit Scores",
    "options_page": "assets/html/options.html",
-   "permissions": [ "tabs", "https://members2.scoresense.com/", "storage" ],
+   "permissions": [ 
+      "tabs", 
+      "https://members2.scoresense.com/", 
+      "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/begin.do",
+      "storage" 
+   ],
    "version": "0.0.1"
 }
