@@ -3,9 +3,9 @@ console.log("Background Script is loading....");
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	switch(request.msg) {
 		case "state":
-			sendResponse({state: CreditReportExtractor.status});
+			sendResponse({state: CreditReportExtractor.getState().status});
 			break;
-			
+
 		case "get-data":
 			console.log("Get data request...");
 
@@ -32,17 +32,23 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			break;
 
 		case "accounts":
-			var accounts = request.data;
-			console.log(accounts);
-			CreditReportExtractor.setAccounts(accounts);
-			// chrome.tabs.remove(sender.tab.id);
+			var accounts = request.data,
+				personal = request.personal;
+
+			console.log(personal);
+			CreditReportExtractor.setAccounts(personal, accounts);
+			chrome.tabs.remove(sender.tab.id);
 			break;
 
 		case "account-detail":
 			var accDetailInfo = request.data;
 			console.log(accDetailInfo);
-			CreditReportExtractor.setAccountDetailInfo(sender.tab.id, accDetailInfo);
+			CreditReportExtractor.setAccountDetailInfo(accDetailInfo);
 			chrome.tabs.remove(sender.tab.id);
+			break;
+
+		case "exception":
+			console.log(request.data);
 			break;
 
 		case "export-data":

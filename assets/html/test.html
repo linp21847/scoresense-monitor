@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+<table>
+	<tr>
+		<td colspan="4">Bank Accounts</td>
+	</tr>
+	<tr>
+		<td>Account Name</td>
+		<td>Balance</td>
+		<td>Limit</td>
+		<td>Debt to Credit Ratio</td>
+		<td>Amount to pay</td>
+		<td>New Balance</td>
+		<td>Account Number</td>
+		<td></td>
+		<td>High Balance</td>
+		<td>Highest Balance Held Ratio</td>
+		<td></td>
+		<td>Date Opened</td>
+		<td>Age</td>
+		<td>30 Days Late</td>
+		<td>60 Days Late</td>
+		<td>90 Days Late</td>
+		<td>120 Days Late</td>
+	</tr>
+	<tr>
+		<td>Account Name</td>
+		<td>Balance</td>
+		<td>Limit</td>
+		<td>=B3/C3</td>
+		<td>=IF(C3<=1000,B3,IF(D3<0.4,0,B3-(C3*0.4)))</td>
+		<td>=B3-E3</td>
+		<td>Account Number</td>
+		<td></td>
+		<td>High Balance</td>
+		<td>=I3/C3</td>
+		<td></td>
+		<td>Date Opened</td>
+		<td>=DATEDIF(L3,TODAY(),"Y")</td>
+		<td>30 Days Late</td>
+		<td>60 Days Late</td>
+		<td>90 Days Late</td>
+		<td>120 Days Late</td>
+	</tr>
+</table>
+</body>
+</html>

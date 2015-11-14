@@ -87,6 +87,50 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 				// 	Parsing summary
 				console.log(parseSummary($summaryTable));
 
+				var extractPersonalInfo = function($infoContainer) {
+					var $name = $($infoContainer.find("table")[2]),
+						$birthday = $($infoContainer.find("table")[4]),
+						$curAddress = $($infoContainer.find("table")[5]),
+						$prevAddress = $($infoContainer.find("table")[6]),
+						$employer = $($infoContainer.find("table")[7]),
+
+						personalInfo = {};
+
+					personalInfo.name = [
+							$($name.find("tr:nth-child(2) td")[1]).text().trim().replace("\n", " "),
+							$($name.find("tr:nth-child(2) td")[2]).text().trim().replace("\n", " "),
+							$($name.find("tr:nth-child(2) td")[3]).text().trim().replace("\n", " ")
+						];
+
+					personalInfo.birthday = [
+							$($birthday.find("tr:nth-child(2) td")[1]).text().trim(),
+							$($birthday.find("tr:nth-child(2) td")[2]).text().trim(),
+							$($birthday.find("tr:nth-child(2) td")[3]).text().trim()
+						];
+
+					personalInfo.curAddress = [
+							$($curAddress.find("tr:nth-child(2) td")[1]).text().trim(),
+							$($curAddress.find("tr:nth-child(2) td")[2]).text().trim(),
+							$($curAddress.find("tr:nth-child(2) td")[3]).text().trim()
+						];
+
+					personalInfo.prevAddress = [
+							$($prevAddress.find("tr:nth-child(2) td")[1]).text().trim(),
+							$($prevAddress.find("tr:nth-child(2) td")[2]).text().trim(),
+							$($prevAddress.find("tr:nth-child(2) td")[3]).text().trim()
+						];
+
+					personalInfo.employer = [
+							$($employer.find("tr:nth-child(2) td")[1]).text().trim(),
+							$($employer.find("tr:nth-child(2) td")[2]).text().trim(),
+							$($employer.find("tr:nth-child(2) td")[3]).text().trim()
+						];
+
+					return personalInfo;
+				}
+
+				console.log(extractPersonalInfo($personalInfoTable));
+
 				for (var i = 7; i < $crInfoTables.length; i += 8) {
 					var $accountInfoBlock = $($crInfoTables[i]),
 						$accountInfoPrevBlock = $accountInfoBlock.prev();
@@ -127,15 +171,19 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 							]
 						};
 
-					if (tempAccount.accountNumber[0] && tempAccount.accountNumber[1] && tempAccount.accountNumber[2])
+					if (tempAccount.accountNumber[0].length + tempAccount.accountNumber[1].length + tempAccount.accountNumber[2].length > 0)
 						accounts.push(tempAccount);
-					else
+					else {
+						chrome.extension.sendMessage({msg: "exception", data: tempAccount}, function(res) {
+							console.log(res);
+						});
 						continue;
+					}
 				}
 
 				console.log(accounts);
 
-				chrome.extension.sendMessage({msg: "accounts", data: accounts}, function(response) {
+				chrome.extension.sendMessage({msg: "accounts", personal: extractPersonalInfo($personalInfoTable), data: accounts}, function(response) {
 					console.log(response);
 				});
 			} else if (window.location.pathname === "/OTProductWeb/flex/productDisplayCenter/mergeCreditReportTradeline.do") {
