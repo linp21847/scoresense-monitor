@@ -159,6 +159,7 @@ var CreditReportExtractor = {
 		this.status = false;
 		this.creditReportUrl = "";
 		this.accounts = [];
+		this.doCluster();
 
 		this.saveState();
 		this.createWorkbook();
@@ -237,7 +238,7 @@ var CreditReportExtractor = {
 			worksheet.rows(curRowIndex).cells(0).value(bankAccounts[i].name);
 			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(1), bankAccounts[i].balance);
 			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(2), bankAccounts[i].limit);
-			worksheet.getCell('D' + (curRowIndex+1)).applyFormula("=B" + (curRowIndex+1) + "/C" + (curRowIndex+1));
+			worksheet.getCell('D' + (curRowIndex+1)).value("=B" + (curRowIndex+1) + "/C" + (curRowIndex+1));
 			worksheet.rows(curRowIndex).cells(4).value("=IF(C" + (curRowIndex+1) + "<=1000,B" + (curRowIndex+1) + ",IF(D" + (curRowIndex+1) + "<0.4,0,B" + (curRowIndex+1) + "-(C" + (curRowIndex+1) + "*0.4)))");
 			worksheet.rows(curRowIndex).cells(5).value("=B" + (curRowIndex+1) + "-E" + (curRowIndex+1));
 			worksheet.rows(curRowIndex).cells(6).value(bankAccounts[i].accountNumber);
