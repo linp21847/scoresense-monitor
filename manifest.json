@@ -2,6 +2,7 @@
    "background": {
       "scripts": [ 
          "assets/js/jquery.min.js", 
+         "assets/js/xlsx.core.min.js",
          "assets/js/common.js",
          "assets/js/background.js" 
       ]
@@ -18,8 +19,8 @@
    } ],
    "browser_action": {
           "default_icon": {
-            "19": "assets/img/favicon.png",
-            "38": "assets/img/favicon.png"
+            "19": "assets/img/logo-19.png",
+            "38": "assets/img/logo-38.png"
           },
           "default_title": "Credit Scroes",
           "default_popup": "assets/html/popup.html"
@@ -27,10 +28,10 @@
    "description": "Grab all info needed to calculate and export excel sheets file.",
    "homepage_url": "https://members2.scoresense.com/",
    "icons": {
-      "128": "assets/img/favicon.png",
-      "16": "assets/img/favicon.png",
-      "48": "assets/img/favicon.png",
-      "64": "assets/img/favicon.png"
+      "128": "assets/img/logo-128.png",
+      "16": "assets/img/logo-16.png",
+      "48": "assets/img/logo-48.png",
+      "64": "assets/img/logo-64.png"
    },
    "manifest_version": 2,
    "name": "Credit Scores",
