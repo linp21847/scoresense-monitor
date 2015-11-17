@@ -1,5 +1,4 @@
-var stateCodes = [
-					["Alabama", "al", "49802"],
+var stateCodes = [["Alabama", "al", "49802"],
 					["Alaska", "ak", "76816"],
 					["Arizona", "az", "55371"],
 					["Arkansas", "ar", "47047"],
@@ -162,6 +161,700 @@ var CreditReportExtractor = {
 		this.accounts = [];
 
 		this.saveState();
+		this.createWorkbook();
+	},
+
+	createWorkbook: function() {
+		console.log("Creating workbook...");
+
+		var self = this,
+			workbook = new $.ig.excel.Workbook($.ig.excel.WorkbookFormat.excel2007),
+			calculatorWorksheet = workbook.worksheets().add("Calculator"),
+			verificationCallWorksheet = workbook.worksheets().add("Verification Call"),
+			summaryWorksheet = workbook.worksheets().add("Summary"),
+			stateCodesWorksheet = workbook.worksheets().add("State Codes");
+
+		calculatorWorksheet = self.createCalculatorWorksheet(calculatorWorksheet);
+		verificationCallWorksheet = self.createVerificationCallWorksheet(verificationCallWorksheet);
+		summaryWorksheet = self.createSummaryWorksheet(summaryWorksheet);
+		stateCodesWorksheet = self.createStateCodesWorksheet(stateCodesWorksheet);
+
+		workbook.save({ type: 'blob' }, function(data) {
+			console.log(data);
+			saveAs(data, "Download.xlsx");
+		},
+		function(error) {
+			console.log(error);
+		});
+	},
+
+	createCalculatorWorksheet: function(worksheet) {
+		var self = this,
+			bankAccounts = self.cluster.bank,
+			closedAccounts = self.cluster.closed,
+			installmentAccounts = self.cluster.installment,
+			curRowIndex = 0,
+			setCurrencyModeToCell = function(cell, value) {
+				balanceCellFormat = cell.cellFormat();
+				balanceCellFormat.formatString("$0");
+				cell.value(value);
+			},
+			getAccountStatus = function(remarkString) {
+				if (remarkString.indexOf("paid") > -1)
+					return "Paid";
+				else if (remarkString.indexOf("Closed") > -1)
+					return "Closed";
+				else
+					return "Paid";
+			};
+
+		//	Rows 0 - Bank Accounts Section...
+		bankCardsTitle = worksheet.mergedCellsRegions().add(0, 0, 0, 4);
+		bankCardsTitle.value("Bank Cards");
+		curRowIndex++;
+
+		//	Rows 1
+		worksheet.rows(curRowIndex).cells(0).value("Account Name");
+		worksheet.rows(curRowIndex).cells(1).value("Balance");
+		worksheet.rows(curRowIndex).cells(2).value("Limit");
+		worksheet.rows(curRowIndex).cells(3).value("Debt to Credit Ratio");
+		worksheet.rows(curRowIndex).cells(4).value("Amount to Pay");
+		worksheet.rows(curRowIndex).cells(5).value("New Balance");
+		worksheet.rows(curRowIndex).cells(6).value("Account Number");
+		worksheet.rows(curRowIndex).cells(8).value("High Balance");
+		worksheet.rows(curRowIndex).cells(9).value("Highest Balance Held Ratio");
+		worksheet.rows(curRowIndex).cells(11).value("Date Opened");
+		worksheet.rows(curRowIndex).cells(12).value("Age");
+		worksheet.rows(curRowIndex).cells(13).value("30 Days Late");
+		worksheet.rows(curRowIndex).cells(14).value("60 Days Late");
+		worksheet.rows(curRowIndex).cells(15).value("90 Days Late");
+		worksheet.rows(curRowIndex).cells(16).value("120 Days Late");
+		curRowIndex++;
+
+		//	From Rows 2, Bank accounts
+		bankAccountStartIndex = curRowIndex + 1;
+		for (var i = 0; i < bankAccounts.length; i++) {
+			worksheet.rows(curRowIndex).cells(0).value(bankAccounts[i].name);
+			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(1), bankAccounts[i].balance);
+			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(2), bankAccounts[i].limit);
+			worksheet.getCell('D' + (curRowIndex+1)).applyFormula("=B" + (curRowIndex+1) + "/C" + (curRowIndex+1));
+			worksheet.rows(curRowIndex).cells(4).value("=IF(C" + (curRowIndex+1) + "<=1000,B" + (curRowIndex+1) + ",IF(D" + (curRowIndex+1) + "<0.4,0,B" + (curRowIndex+1) + "-(C" + (curRowIndex+1) + "*0.4)))");
+			worksheet.rows(curRowIndex).cells(5).value("=B" + (curRowIndex+1) + "-E" + (curRowIndex+1));
+			worksheet.rows(curRowIndex).cells(6).value(bankAccounts[i].accountNumber);
+			worksheet.rows(curRowIndex).cells(8).value(bankAccounts[i].highBalance);
+			worksheet.rows(curRowIndex).cells(9).value("=I" + (curRowIndex+1) + "/C" + (curRowIndex+1));
+			worksheet.rows(curRowIndex).cells(11).value(bankAccounts[i].opened);
+			worksheet.rows(curRowIndex).cells(12).value('=DATEDIF(L' + (curRowIndex+1) + ',TODAY(),"Y")');
+			worksheet.rows(curRowIndex).cells(13).value(bankAccounts[i].latePayments['30']);
+			worksheet.rows(curRowIndex).cells(14).value(bankAccounts[i].latePayments['60']);
+			worksheet.rows(curRowIndex).cells(15).value(bankAccounts[i].latePayments['90']);
+			worksheet.rows(curRowIndex).cells(16).value();
+			curRowIndex++;
+		}
+		bankAccountEndIndex = curRowIndex;
+
+		//	Rows 1+(bank accounts count) - Retail Cards Section...
+		bankCardsTitle = worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 4);
+		bankCardsTitle.value("Retail Cards");
+		curRowIndex++;
+
+		//	Rows 2+(bank accounts count)
+		worksheet.rows(curRowIndex).cells(0).value("Account Name");
+		worksheet.rows(curRowIndex).cells(1).value("Balance");
+		worksheet.rows(curRowIndex).cells(2).value("Limit");
+		worksheet.rows(curRowIndex).cells(3).value("Debt to Credit Ratio");
+		worksheet.rows(curRowIndex).cells(4).value("Amount to Pay");
+		worksheet.rows(curRowIndex).cells(5).value("New Balance");
+		worksheet.rows(curRowIndex).cells(6).value("Account Number");
+		worksheet.rows(curRowIndex).cells(8).value("High Balance");
+		worksheet.rows(curRowIndex).cells(9).value("Highest Balance Held Ratio");
+		worksheet.rows(curRowIndex).cells(11).value("Date Opened");
+		worksheet.rows(curRowIndex).cells(12).value("Age");
+		worksheet.rows(curRowIndex).cells(13).value("30 Days Late");
+		worksheet.rows(curRowIndex).cells(14).value("60 Days Late");
+		worksheet.rows(curRowIndex).cells(15).value("90 Days Late");
+		worksheet.rows(curRowIndex).cells(16).value("120 Days Late");
+		curRowIndex++;
+
+		retailCardStartIndex = curRowIndex + 1;
+
+		//	Adding a blank row
+		curRowIndex++;
+		retailCardEndIndex = curRowIndex;
+
+		//	Summary Line
+		summaryLineIndex = curRowIndex + 1;
+		worksheet.rows(curRowIndex).cells(0).value("SUM:");
+		worksheet.rows(curRowIndex).cells(1).value("=SUM(B3:B" + bankAccountEndIndex + ",B" + retailCardStartIndex + ":B" + retailCardEndIndex + ")");
+		worksheet.rows(curRowIndex).cells(2).value("=SUM(C3:C" + bankAccountEndIndex + ",C" + retailCardStartIndex + ":C" + retailCardEndIndex + ")");
+		worksheet.rows(curRowIndex).cells(3).value("Total Amt to Pay:");
+		worksheet.rows(curRowIndex).cells(1).value("=SUM(E3:E" + bankAccountEndIndex + ",E" + retailCardStartIndex + ":E" + retailCardEndIndex + ")");
+		curRowIndex += 2;
+
+		//	4 + bankAccounts.length
+		worksheet.rows(curRowIndex).cells(2).value("Debt to credit ratio");
+		worksheet.rows(curRowIndex).cells(3).value("=MAX(E3:E" + bankAccountEndIndex + ",E" + retailCardStartIndex + ":E" + retailCardEndIndex + ")");
+		self.summaryLineIndex = curRowIndex + 1;
+
+		worksheet.rows(curRowIndex).cells(8).value("Highest Balance Held Ratio");
+		worksheet.rows(curRowIndex).cells(9).value("=MAX(J3:J" + bankAccountEndIndex + ",J" + retailCardStartIndex + ":J" + retailCardEndIndex + ")");
+
+		worksheet.rows(curRowIndex).cells(12).value("Oldest Account");
+		worksheet.rows(curRowIndex).cells(13).value("=MAX(M3:M" + bankAccountEndIndex + ",M" + retailCardStartIndex + ":M" + retailCardEndIndex + ")");
+		curRowIndex += 2;
+
+		//	Aggregate line
+		worksheet.rows(curRowIndex).cells(2).value("Debt to credit ratio");
+		worksheet.rows(curRowIndex).cells(3).value("=B" + summaryLineIndex + "/C" + summaryLineIndex);
+		curRowIndex += 2;
+
+		//	Closed Accounts With Balances and/or Lates line
+		worksheet.rows(curRowIndex).cells(0).value("Account Name");
+		worksheet.rows(curRowIndex).cells(1).value("Account Type");
+		worksheet.rows(curRowIndex).cells(2).value("Balance");
+		worksheet.rows(curRowIndex).cells(3).value("Account Number");
+		worksheet.rows(curRowIndex).cells(4).value("Payment Status");
+		worksheet.rows(curRowIndex).cells(5).value("Account Status");
+
+		worksheet.rows(curRowIndex).cells(8).value("Date Opened");
+		worksheet.rows(curRowIndex).cells(9).value("Last Reported");
+		worksheet.rows(curRowIndex).cells(10).value("30 Days Late");
+		worksheet.rows(curRowIndex).cells(11).value("60 Days Late");
+		worksheet.rows(curRowIndex).cells(12).value("90 Days Late");
+		worksheet.rows(curRowIndex).cells(13).value("120 Days Late");
+		curRowIndex++;
+
+		for (var i = 0; i < closedAccounts.length; i++) {
+			item = closedAccounts[i];
+			worksheet.rows(curRowIndex).cells(0).value(item.name);
+			worksheet.rows(curRowIndex).cells(1).value(item.type);
+			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(2), item.balance);
+			worksheet.rows(curRowIndex).cells(3).value(item.accountNumber);
+			worksheet.rows(curRowIndex).cells(4).value(item.payStatus);
+			worksheet.rows(curRowIndex).cells(5).value(getAccountStatus(item.remark));
+
+			worksheet.rows(curRowIndex).cells(8).value(item.opened);
+			worksheet.rows(curRowIndex).cells(9).value(item.reported);
+			worksheet.rows(curRowIndex).cells(10).value(item.latePayments[30]);
+			worksheet.rows(curRowIndex).cells(11).value(item.latePayments[60]);
+			worksheet.rows(curRowIndex).cells(12).value(item.latePayments[90]);
+			worksheet.rows(curRowIndex).cells(13).value();
+			curRowIndex++;
+		}
+
+		//	Authorized User Accounts
+		bankCardsTitle = worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 4);
+		bankCardsTitle.value("Authorized User Accounts");
+		curRowIndex++;
+
+		//	Rows 
+		worksheet.rows(curRowIndex).cells(0).value("Account Name");
+		worksheet.rows(curRowIndex).cells(1).value("Balance");
+		worksheet.rows(curRowIndex).cells(2).value("Limit");
+		worksheet.rows(curRowIndex).cells(3).value("Debt to Credit Ratio");
+		worksheet.rows(curRowIndex).cells(4).value("Amount to Pay");
+		worksheet.rows(curRowIndex).cells(5).value("New Balance");
+		worksheet.rows(curRowIndex).cells(6).value("Account Number");
+		worksheet.rows(curRowIndex).cells(8).value("Inquiries");
+		worksheet.rows(curRowIndex).cells(9).value("Date");
+		worksheet.rows(curRowIndex).cells(10).value("Experian");
+		worksheet.rows(curRowIndex).cells(11).value("Equifax");
+		worksheet.rows(curRowIndex).cells(12).value("Transunion");
+		worksheet.rows(curRowIndex).cells(13).value("Type of Inquiry");
+		worksheet.rows(curRowIndex).cells(14).value("60 Days Late");
+		worksheet.rows(curRowIndex).cells(15).value("90 Days Late");
+		worksheet.rows(curRowIndex).cells(16).value("120 Days Late");
+		curRowIndex += 2;
+
+		//	Installment Accounts
+		installmentAccountTitle = worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 4);
+		installmentAccountTitle.value("Installment Accounts");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Account Name");
+		worksheet.rows(curRowIndex).cells(1).value("Type of Loan");
+		worksheet.rows(curRowIndex).cells(2).value("Balance");
+		worksheet.rows(curRowIndex).cells(3).value("Monthly Payment");
+		worksheet.rows(curRowIndex).cells(4).value("Date Opened");
+		worksheet.rows(curRowIndex).cells(5).value("Age");
+		worksheet.rows(curRowIndex).cells(6).value("Lates");
+		curRowIndex++;
+
+		for(var i = 0; i < installmentAccounts.length; i++) {
+			item = installmentAccounts[i];
+			worksheet.rows(curRowIndex).cells(0).value(item.name);
+			worksheet.rows(curRowIndex).cells(1).value(item.type);
+			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(2), item.balance);
+			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(3), item.payment);
+			worksheet.rows(curRowIndex).cells(4).value(item.opened);
+			worksheet.rows(curRowIndex).cells(5).value('=DATEDIF(E' + (curRowIndex + 1) + ',TODAY(),"Y")');
+			worksheet.rows(curRowIndex).cells(6).value(item.latePayments['30'] + ',' + item.latePayments['60'] + ',' + item.latePayments['90']);
+			curRowIndex++;
+		}
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Credit Scores"); curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Experian");
+		worksheet.rows(curRowIndex).cells(1).value("Equifax");
+		worksheet.rows(curRowIndex).cells(2).value("Transunion");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value(self.scores.Experian);
+		worksheet.rows(curRowIndex).cells(1).value(self.scores.Equifax);
+		worksheet.rows(curRowIndex).cells(2).value(self.scores.Transunion);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Age of Client");
+		worksheet.rows(curRowIndex).cells(1).value(self.personal.birthday);
+		worksheet.rows(curRowIndex).cells(2).value('=2015-B' + (curRowIndex + 1));
+		self.yearBornLineInxex = curRowIndex + 1;
+	},
+
+	createVerificationCallWorksheet: function(worksheet) {
+		var curRowIndex = 0,
+			mergedRegion = worksheet.mergedCellsRegions().add( 0, 0, 0, 9 );
+
+		mergedRegion.value("CORPORATION PROFILE");
+		worksheet.rows(curRowIndex).cells(11).value("Go into Sheet 3 and ask which type of cards they have for Chase, Bank of America, Citi, and Capital One (if any)");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Business Name:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 9);
+		
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mailing Address:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 6);
+		worksheet.rows(curRowIndex).cells(7).value("Suite #");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Verify Address on ID and Application");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mailing Cont.:");
+		worksheet.rows(curRowIndex).cells(1).value("City");
+		worksheet.mergedCellsRegions().add(curRowIndex, 2, curRowIndex, 4);
+		worksheet.rows(curRowIndex).cells(5).value("State");
+		worksheet.rows(curRowIndex).cells(7).value("ZIP Code");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Funding Estimate Amounts.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Tax Identification No.:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("# of Employees:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Seek Fee.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Phone Number:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Web Domain:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Multiple applications will be sent for credit cards.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Type of Entity:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("State of Incorporation:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Funding Status Update");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Nature of Business:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Services Provided:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       APR, both introductory and ongoing rates.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Business Incorp Date:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Business Start Date:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Timeline of funding process.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Business Gross Income");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Net Profit");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Do\'s and don\'ts of credit report.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(11).value("       How to handle bank calls and emails.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("GUARANTOR INFO");
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Industry Experience:");
+		worksheet.rows(curRowIndex).cells(11).value("       Invoicing and Liquidation Instructions.");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Full Name:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Does client understand APR, both introductory and ongoing rates?");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(1).value("Last");
+		worksheet.rows(curRowIndex).cells(3).value("First");
+		worksheet.rows(curRowIndex).cells(7).value("Middle Name");
+		worksheet.rows(curRowIndex).cells(11).value("       Timeline of funding process:  ");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mailing Address:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 6);
+		worksheet.rows(curRowIndex).cells(7).value("Suite #");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Do\'s and don\'ts of funding process:  ");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mailing Cont.:");
+		worksheet.rows(curRowIndex).cells(1).value("City");
+		worksheet.mergedCellsRegions().add(curRowIndex, 2, curRowIndex, 4);
+		worksheet.rows(curRowIndex).cells(5).value("State");
+		worksheet.rows(curRowIndex).cells(7).value("ZIP Code");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       How to handle bank calls:  ");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Social Security Number:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.rows(curRowIndex).cells(3).value("Birth Date:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 4, curRowIndex, 6);
+		worksheet.rows(curRowIndex).cells(7).value("Age");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Who their Seek Funding Coordinator is:");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Home Phone Number:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.rows(curRowIndex).cells(3).value("Cell Number:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 4, curRowIndex, 9);
+		worksheet.rows(curRowIndex).cells(11).value("       Additional Comments:");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Email Address:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Mother\'s Maiden Name:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Time at Residence:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 1, curRowIndex, 2);
+		worksheet.mergedCellsRegions().add(curRowIndex, 3, curRowIndex, 4).value("Gross Annual Income:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Drivers License:");
+		worksheet.rows(curRowIndex).cells(2).value("State:");
+		worksheet.rows(curRowIndex).cells(4).value("Issue Date:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 5, curRowIndex, 6);
+		worksheet.rows(curRowIndex).cells(7).value("Expiration:");
+		worksheet.mergedCellsRegions().add(curRowIndex, 8, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Seek Additional Info");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("1. Income used for Personal Or Business?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("2. Business Projection Used?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("3. Business address used on application? (Cannot Be P.O. BOX)");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("4. Time in business?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("5. Business Name Used? Business may have other names such as DBA,");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+		curRowIndex++;
+		curRowIndex++;
+
+
+		worksheet.rows(curRowIndex).cells(0).value("Business Questions:");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("1. Can they receive mail at business address?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("2. Does client have business checking account? What Bank? How much in deposits?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("3. Are there business Derrogatories/BK?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("4. Are there any existing business accounts?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("5. If Yes, Need name of Bank, Credit Limits, Balances, Average monthly payment being made, current/delinquent on account");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Personal Questions:");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("1. Can they receive mail at personal address?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("2. Personal BK in the past?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("3. Personal Checking/Savings? What Banks? Current Deposit amounts? (If BOFA/CHASE-also ask last deposit amount, how much, when?)");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("4. Vehicles registered under PG (Year, Model, Color)?");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("5. College Graduated at? Year? Major? Any Special Degrees/License? (Example: real estate License)");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("6. Who else lives in the household? Need First,Middle,Last name for everyone in the household along with Date of Birth");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("7. Do they have personal credit cards with BofA/Chase? Last few purchases made, amount, due dates of each account.");
+		curRowIndex++;
+		worksheet.mergedCellsRegions().add(curRowIndex, 0, curRowIndex, 9);
+		curRowIndex++;
+
+		curRowIndex += 2;
+		worksheet.rows(curRowIndex).cells(0).value("Go into Sheet 3 and ask which type of cards they have for Chase, Bank of America, Citi, and Capital One (if any)");
+	},
+
+	createSummaryWorksheet: function(worksheet) {
+		var curRowIndex = 0,
+			self = this;
+
+		worksheet.rows(curRowIndex).cells(1).value("Tier 1");
+		worksheet.rows(curRowIndex).cells(2).value("Tier 2");
+		worksheet.rows(curRowIndex).cells(3).value("Tier 3");
+		worksheet.rows(curRowIndex).cells(6).value("Inputs");
+		worksheet.rows(curRowIndex).cells(9).value("Credit Score");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Credit Score");
+		worksheet.rows(curRowIndex).cells(1).value("720+");
+		worksheet.rows(curRowIndex).cells(2).value("690-719");
+		worksheet.rows(curRowIndex).cells(3).value("660-689");
+		worksheet.rows(curRowIndex).cells(5).value("Credit Score");
+		worksheet.rows(curRowIndex).cells(6).value("Inputs");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$2>=660,$G$2<=689),"Tier 3",(IF(AND($G$2>=690,$G$2<=719),"Tier 2",(IF(AND($G$2>=720,$G$2<=900),"Tier 1",(IF(AND($G$2>=500,$G$2<=659),"DECLINE",)))))))');
+		worksheet.rows(curRowIndex).cells(9).value("Credit Score");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(9).value("Experian");
+		worksheet.rows(curRowIndex).cells(10).value("Equifax");
+		worksheet.rows(curRowIndex).cells(11).value("Transunion");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(9).value(self.scores.Experian);
+		worksheet.rows(curRowIndex).cells(10).value(self.scores.Equifax);
+		worksheet.rows(curRowIndex).cells(11).value(self.scores.Transunion);
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Debt to Credit Ratio");
+		worksheet.rows(curRowIndex).cells(1).value("0-45%");
+		worksheet.rows(curRowIndex).cells(2).value("46-50%");
+		worksheet.rows(curRowIndex).cells(3).value("51-65%");
+		worksheet.rows(curRowIndex).cells(5).value("Highest Utilization");
+		worksheet.rows(curRowIndex).cells(6).value("=Calculator!D" + self.summaryLineIndex);
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$5>=0.1,$G$5<=0.45),"Tier 1",(IF(AND($G$5>=0.46,$G$5<=0.5),"Tier 2",(IF(AND($G$5>=0.51,$G$5<=0.65),"Tier 3",(IF(AND($G$5>=0.66,$G$5<=1),"DECLINE",)))))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(5).value("Aggregate Utilization");
+		worksheet.rows(curRowIndex).cells(6).value("=Calculator!D" + (self.summaryLineIndex + 2));
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Minimum # of open Lines");
+		worksheet.rows(curRowIndex).cells(1).value("3");
+		worksheet.rows(curRowIndex).cells(2).value("2");
+		worksheet.rows(curRowIndex).cells(3).value("2");
+		worksheet.rows(curRowIndex).cells(5).value("Minimum # of open Lines");
+		worksheet.rows(curRowIndex).cells(6).value(0);
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$7>=0,$G$7<=1.9),"DECLINE",(IF(AND($G$7>=2,$G$7<=2.9),"Tier 2 Or Tier 3",(IF(AND($G$7>=3,$G$7<=99),"Tier 1",)))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Minimum Age of Accounts (oldest)");
+		worksheet.rows(curRowIndex).cells(1).value("4");
+		worksheet.rows(curRowIndex).cells(2).value("2");
+		worksheet.rows(curRowIndex).cells(3).value("2");
+		worksheet.rows(curRowIndex).cells(5).value("Minimum Age of Accounts (oldest)");
+		worksheet.rows(curRowIndex).cells(6).value("=Calculator!N" + self.summaryLineIndex);
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$8>=0,$G$8<=1.9),"DECLINE",(IF(AND($G$8>=2,$G$8<=3.9),"Tier 2 Or Tier 3",(IF(AND($G$8>=4,$G$8<=99),"Tier 1",)))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Max # of Inquiries/ per bureau (last 6 months)");
+		worksheet.rows(curRowIndex).cells(1).value("2");
+		worksheet.rows(curRowIndex).cells(2).value("4");
+		worksheet.rows(curRowIndex).cells(3).value("6");
+		worksheet.rows(curRowIndex).cells(5).value("Max # of Inquiries/ per bureau (last 6 months)");
+		worksheet.rows(curRowIndex).cells(6).value("0");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$9>=0,$G$9<=2),"Tier 1",(IF(AND($G$9>=2.1,$G$9<=4),"Tier 2 ",(IF(AND($G$9>=4.1,$G$9<=6),"Tier 3",(IF(AND($G$9>=6.1,$G$9<=99),"DECLINE")))))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Max # Derogatories (last 2 years)");
+		worksheet.rows(curRowIndex).cells(1).value("0");
+		worksheet.rows(curRowIndex).cells(2).value("1");
+		worksheet.rows(curRowIndex).cells(3).value("3");
+		worksheet.rows(curRowIndex).cells(5).value("Max # Deragatories 30 days late (last 2 years)");
+		worksheet.rows(curRowIndex).cells(6).value("0");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$10>=0,$G$10<=0.9),"Tier 1",(IF(AND($G$10>=1,$G$10<=1.9),"Tier 2 ",(IF(AND($G$10>=2,$G$10<=3.9),"Tier 3",(IF(AND($G$10>=4,$G$10<=99),"DECLINE")))))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Max # Deragatories 30 days late (last 2 years)");
+		worksheet.rows(curRowIndex).cells(1).value("0");
+		worksheet.rows(curRowIndex).cells(2).value("1");
+		worksheet.rows(curRowIndex).cells(3).value("3");
+		worksheet.rows(curRowIndex).cells(5).value("Max # Deragatories 60 days late (last 2 years)");
+		worksheet.rows(curRowIndex).cells(6).value("0");
+		worksheet.rows(curRowIndex).cells(7).value('=IF($G$11=0,"All Tiers","DECLINE")');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Max # Deragatories 60 days late (last 2 years)");
+		worksheet.rows(curRowIndex).cells(1).value("0");
+		worksheet.rows(curRowIndex).cells(2).value("0");
+		worksheet.rows(curRowIndex).cells(3).value("0");
+		worksheet.rows(curRowIndex).cells(5).value("Max # Derogatories (last 2 years)");
+		worksheet.rows(curRowIndex).cells(6).value("0");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$12>=0,$G$12<=0.9),"Tier 1",(IF(AND($G$12>=1,$G$12<=1.9),"Tier 2 ",(IF(AND($G$12>=2,$G$12<=3.9),"Tier 3",(IF(AND($G$12>=4,$G$12<=99),"DECLINE")))))))');
+		curRowIndex++;
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Highest Balance Held Ratio (Highest)");
+		worksheet.rows(curRowIndex).cells(1).value("60%+");
+		worksheet.rows(curRowIndex).cells(2).value("30-60%");
+		worksheet.rows(curRowIndex).cells(3).value("0-29%");
+		worksheet.rows(curRowIndex).cells(5).value("Highest Balance Held Ratio (Highest) ");
+		worksheet.rows(curRowIndex).cells(6).value("=Calculator!J" + self.summaryLineIndex);
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$14>=0.61,$G$14<=0.99),"Tier 1",(IF(AND($G$14>=0.3,$G$14<=0.6),"Tier 2 ",(IF(AND($G$14>=0,$G$14<=0.29),"Tier 3",)))))');
+		curRowIndex++;
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("# of Satisifed Accounts");
+		worksheet.rows(curRowIndex).cells(1).value("7+");
+		worksheet.rows(curRowIndex).cells(2).value("3--6");
+		worksheet.rows(curRowIndex).cells(3).value("1--2");
+		worksheet.rows(curRowIndex).cells(5).value("# of Satisifed Accounts");
+		worksheet.rows(curRowIndex).cells(6).value("0");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$16>=7,$G$16<=99),"Tier 1",(IF(AND($G$16>=3,$G$16<=6.9),"Tier 2 ",(IF(AND($G$16>=1,$G$16<=2.9),"Tier 3",(IF(AND($G$16>=0,$G$16<=0.9),"DECLINE")))))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mortgage Holder (Never Late)");
+		worksheet.rows(curRowIndex).cells(1).value("yes");
+		worksheet.rows(curRowIndex).cells(2).value("no");
+		worksheet.rows(curRowIndex).cells(3).value("no");
+		worksheet.rows(curRowIndex).cells(5).value("Mortgage Holder (Never Late)");
+		worksheet.rows(curRowIndex).cells(6).value("no");
+		worksheet.rows(curRowIndex).cells(7).value('=IF($G$17="yes","Tier 1","Tier 2 Or 3")');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Conservative States ");
+		worksheet.rows(curRowIndex).cells(1).value("yes");
+		worksheet.rows(curRowIndex).cells(2).value("no");
+		worksheet.rows(curRowIndex).cells(3).value("no");
+		worksheet.rows(curRowIndex).cells(5).value("Enter State (lower case)");
+		worksheet.rows(curRowIndex).cells(6).value("CA");
+		worksheet.rows(curRowIndex).cells(7).value('');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(5).value("Conservative States ");
+		worksheet.rows(curRowIndex).cells(6).value("=IF(VLOOKUP($G$18,'State Codes'!$B$1:$C$51,2,FALSE)>=60000,\"no\",\"yes\")");
+		worksheet.rows(curRowIndex).cells(7).value('=IF($G$19="yes","Tier 1","Tier 2 Or 3")');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Age of client");
+		worksheet.rows(curRowIndex).cells(1).value("25-60");
+		worksheet.rows(curRowIndex).cells(2).value("25-60");
+		worksheet.rows(curRowIndex).cells(3).value("22-65");
+		worksheet.rows(curRowIndex).cells(5).value("Year Born");
+		worksheet.rows(curRowIndex).cells(6).value("=Calculator!B" + self.yearBornLineInxex);
+		worksheet.rows(curRowIndex).cells(7).value('');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(5).value("Age of client");
+		worksheet.rows(curRowIndex).cells(6).value("=2015-G20");
+		worksheet.rows(curRowIndex).cells(7).value('=IF(AND($G$21>=25,$G$21<=60),"All Tiers",(IF(AND($G$21>=22,$G$21<=24.9),"Tier 3 ",(IF(AND($G$21>=61,$G$21<=65),"Tier 3",(IF(AND($G$21>=66,$G$21<=99),"DECLINE")))))))');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Primary Funding Level");
+		worksheet.rows(curRowIndex).cells(1).value("$60,000-$90,000");
+		worksheet.rows(curRowIndex).cells(2).value("$30,000- $75,000");
+		worksheet.rows(curRowIndex).cells(3).value("$10,000- $40,000");
+		worksheet.rows(curRowIndex).cells(5).value("Funding Holdbacks");
+		worksheet.rows(curRowIndex).cells(6).value("");
+		worksheet.rows(curRowIndex).cells(7).value('');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Secondary Funding Levell");
+		worksheet.rows(curRowIndex).cells(1).value("$40,000- $70,000");
+		worksheet.rows(curRowIndex).cells(2).value("$10,000- $40,000");
+		worksheet.rows(curRowIndex).cells(3).value("$5,000- $30,000");
+		worksheet.rows(curRowIndex).cells(5).value("Mortgage Holder (Never Late)");
+		worksheet.rows(curRowIndex).cells(6).value("no");
+		worksheet.rows(curRowIndex).cells(7).value('=IF($G$23="yes","All Tiers","DECLINE")');
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(5).value("Bankruptcies, Collections, Judgements ");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Funding Holdbacks");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Age of client");
+		worksheet.rows(curRowIndex).cells(1).value("52-60");
+		worksheet.rows(curRowIndex).cells(2).value("22-25, 52-60");
+		worksheet.rows(curRowIndex).cells(3).value("22-25, 52-60");
+		curRowIndex++;
+
+		worksheet.rows(curRowIndex).cells(0).value("Mortgage Holder (Never Late)");
+		worksheet.rows(curRowIndex).cells(1).value("no");
+		worksheet.rows(curRowIndex).cells(2).value("no");
+		worksheet.rows(curRowIndex).cells(3).value("no");
+		curRowIndex++;
+	},
+
+	createStateCodesWorksheet: function(worksheet) {
+		var self = this;
+
+		for (var i = 0; i < stateCodes.length; i++) {
+			for (var j = 0; j < stateCodes[i].length; j++) {
+				worksheet.rows(i).cells(j).value(stateCodes[i][j]);
+			}
+		}
 	},
 
 	download: function() {
@@ -769,7 +1462,7 @@ var CreditReportExtractor = {
 			"<td>Business Gross Income</td>" +
 			"<td></td><td></td>" +
 			"<td>Net Profit</td><td></td><td></td><td></td><td></td><td></td><td></td>" +
-			"<td></td><td>       Do’s and don’ts of credit report.</td>" +
+			"<td></td><td>       Do\'s and don\'ts of credit report.</td>" +
 		"</tr>").appendTo($tbody);
 
 		$("<tr>" +
@@ -803,7 +1496,7 @@ var CreditReportExtractor = {
 			"<td></td><td></td><td></td><td></td><td></td><td></td>" +
 			"<td>Suite #</td>" +
 			"<td></td><td></td>" +
-			"<td></td><td>       Do’s and don’ts of funding process:  </td>" +
+			"<td></td><td>       Do\'s and don\'ts of funding process:  </td>" +
 		"</tr>").appendTo($tbody);
 		
 		$("<tr>" +
@@ -831,7 +1524,7 @@ var CreditReportExtractor = {
 
 		$("<tr>" +
 			"<td>Email Address:</td><td></td><td></td>" +
-			"<td>Mother’s Maiden Name:</td><td></td><td></td><td></td><td></td><td></td><td></td>" +
+			"<td>Mother\'s Maiden Name:</td><td></td><td></td><td></td><td></td><td></td><td></td>" +
 		"</tr>").appendTo($tbody);
 
 		$("<tr>" +

@@ -1,5 +1,3 @@
-console.log("Background Script is loading....");
-
 chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 	switch(request.msg) {
 		case "state":
@@ -43,8 +41,8 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 		case "account-detail":
 			var accDetailInfo = request.data;
 			console.log(accDetailInfo);
-			CreditReportExtractor.setAccountDetailInfo(accDetailInfo);
 			chrome.tabs.remove(sender.tab.id);
+			CreditReportExtractor.setAccountDetailInfo(accDetailInfo);
 			break;
 
 		case "exception":
@@ -59,4 +57,15 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 		default:
 			break;
 	}
+});
+
+$(document).ready(function() {
+	$.ig.loader({
+		scriptPath: "../js/",
+		cssPath: "../css/",
+		resources: 'modules/util.js,' +
+				   // 'modules/xml.js,' +
+				   'modules/documents.core.js,' +
+				   'modules/excel.js'
+	});
 })

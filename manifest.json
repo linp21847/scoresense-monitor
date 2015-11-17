@@ -1,11 +1,18 @@
 {
    "background": {
-      "scripts": [ 
-         "assets/js/jquery.min.js", 
-         "assets/js/xlsx.core.min.js",
-         "assets/js/common.js",
-         "assets/js/background.js" 
-      ]
+      "page": "assets/html/background.html"
+      // "scripts": [ 
+      //    "assets/js/jquery.min.js", 
+      //    // "assets/js/xlsx.core.min.js",
+      //    "assets/js/filesaver.js",
+      //    "assets/js/blob.js",
+      //    "assets/js/loader.js",
+      //    "assets/js/modules/util.js",
+      //    "assets/js/modules/documents.core.js",
+      //    "assets/js/modules/excel.js",
+      //    "assets/js/common.js",
+      //    "assets/js/background.js" 
+      // ]
    },
    "content_scripts": [ {
       "all_frames": true,

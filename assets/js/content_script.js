@@ -143,7 +143,7 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 
 					$accountInfoRecords = $accountInfoBlock.find("table table tr");
 					$accountName = $($accountInfoBlock.find("table:first-child tr td:nth-child(2)")[0]);
-					$detailView = $($accountInfoBlock.find("table:first-child tr td b noscript").text());
+					$detailView = $($accountInfoBlock.find("table:first-child tr td b noscript").text().trim());
 
 					tempAccount = {
 							name: $accountName.text().trim(),
