@@ -253,7 +253,7 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 			}
 		} else if (window.location.host === "layth.local" || window.location.host === "162.243.49.141") {
 
-			if (param.status) {
+			if (param.state) {
 				var cur = (new Date()).getTime(),
 					interval = 500;
 
