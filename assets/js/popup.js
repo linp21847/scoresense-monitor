@@ -6,10 +6,4 @@ $(document).ready(function() {
 			console.log("Response for get-data");
 		})
 	});
-
-	$("#export-data").click(function() {
-		chrome.extension.sendMessage({msg: "export-data"}, function() {
-			console.log("Response for export-data");
-		})
-	});
 })

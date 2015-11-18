@@ -1,18 +1,6 @@
 {
    "background": {
       "page": "assets/html/background.html"
-      // "scripts": [ 
-      //    "assets/js/jquery.min.js", 
-      //    // "assets/js/xlsx.core.min.js",
-      //    "assets/js/filesaver.js",
-      //    "assets/js/blob.js",
-      //    "assets/js/loader.js",
-      //    "assets/js/modules/util.js",
-      //    "assets/js/modules/documents.core.js",
-      //    "assets/js/modules/excel.js",
-      //    "assets/js/common.js",
-      //    "assets/js/background.js" 
-      // ]
    },
    "content_scripts": [ {
       "all_frames": true,
@@ -21,7 +9,8 @@
          "assets/js/content_script.js" ],
       "matches": [ 
          "https://members2.scoresense.com/",
-         "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/*"
+         "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/*",
+         "http://layth.local/*"
       ]
    } ],
    "browser_action": {
@@ -46,6 +35,7 @@
    "permissions": [ 
       "tabs", 
       "https://members2.scoresense.com/", 
+      "http://www.igniteui.com/*",
       "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/begin.do",
       "storage" 
    ],

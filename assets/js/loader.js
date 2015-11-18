@@ -1276,14 +1276,14 @@ if (typeof jQuery !== "function") {
         dependency: [{
             name: "igUtil"
         }],
-        scripts: ["$path$/modules/documents.core.js", "$path$/modules/excel.js"],
+        scripts: ["$path$/modules/infragistics.documents.core.js", "$path$/modules/infragistics.excel.js"],
         css: []
     }, {
         widget: "igGridExcelExporter",
         dependency: [{
             name: "igExcel"
         }],
-        scripts: ["$path$/modules/gridexcelexporter.js"],
+        scripts: ["$path$/modules/infragistics.gridexcelexporter.js"],
         css: []
     }];
     $.ig.theme = "infragistics";
@@ -1366,7 +1366,8 @@ if (typeof jQuery !== "function") {
                 }
                 this.settings.ready = callback;
                 var res = resources.split(","),
-                    loadBatch = {}, i;
+                    loadBatch = {},
+                    i;
                 loadBatch.callback = this._proxy(loadBatch, this._callback, []);
                 loadBatch.waitFireCallback = this._proxy(loadBatch, this._waitFireCallback, []);
                 loadBatch._noWdgtLoaded = res.length;
@@ -1455,7 +1456,8 @@ if (typeof jQuery !== "function") {
                     } else {
                         this.settings.locale = "en"
                     }
-                } if (!regional) {
+                }
+                if (!regional) {
                     regional = options.locale
                 }
                 if (!regional && this._defaultLocale === "ja") {
@@ -1617,7 +1619,8 @@ if (typeof jQuery !== "function") {
                         this._loadFeatureItem(name, type, loadingEntity, scriptData.dependency[j].parentWidget)
                     } else {
                         this._loadFeatureItem(name, type, loadingEntity)
-                    } if (type === "script") {
+                    }
+                    if (type === "script") {
                         this._loadedScriptDependencies.push(name)
                     } else {
                         this._loadedCssDependencies.push(name)

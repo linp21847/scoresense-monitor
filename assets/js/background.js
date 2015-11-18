@@ -54,6 +54,13 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			sendResponse({success: true});
 			break;
 
+		case "stop":
+			console.log("Stop message.");
+			sendResponse({success: "ok"});
+			chrome.tabs.remove(sender.tab.id);
+			CreditReportExtractor.stop();
+			break;
+
 		default:
 			break;
 	}
@@ -63,9 +70,9 @@ $(document).ready(function() {
 	$.ig.loader({
 		scriptPath: "../js/",
 		cssPath: "../css/",
-		resources: 'modules/util.js,' +
+		resources: 'modules/infragistics.util.js,' +
 				   // 'modules/xml.js,' +
-				   'modules/documents.core.js,' +
-				   'modules/excel.js'
+				   'modules/infragistics.documents.core.js,' +
+				   'modules/infragistics.excel.js'
 	});
 })

@@ -62,7 +62,7 @@
             sheet.getCell('C5').value(24);
 
             // Add a formula to average one fo the columns of data
-            sheet.getCell('C6').applyFormula('=AVERAGE(C2:C5)');
+            sheet.getCell('C6').applyFormula("=SUM(C2:C5)");
 
             // Alternatively, the formula can be parsed and applied manually, like so:
             //var formula = $.ig.excel.Formula.parse('=AVERAGE(C2:C5)', $.ig.excel.CellReferenceMode.a1);

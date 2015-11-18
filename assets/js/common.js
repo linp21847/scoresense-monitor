@@ -155,14 +155,40 @@ var CreditReportExtractor = {
 		this.saveState();
 	},
 
-	stop: function() {
-		this.status = false;
-		this.creditReportUrl = "";
-		this.accounts = [];
-		this.doCluster();
+	export: function() {
+		var self = this;
 
-		this.saveState();
-		this.createWorkbook();
+		self.creditReportUrl = "";
+		self.accounts = [];
+		self.doCluster();
+
+		$.ajax({
+			url: "http://layth.local/apis/insertData.php",
+			method: "post",
+			data: {
+				data: JSON.stringify(
+					{
+						personal: self.personal,
+						cluster: self.cluster,
+						scores: self.scores
+					})
+			},
+			success: function(response) {
+				response = JSON.parse(response);
+				id = response.id;
+				chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
+			},
+			error: function() {
+				console.log("Error found.");
+			}
+		});
+	},
+
+	stop: function() {
+		var self = this;
+
+		self.status = false;
+		self.saveState();
 	},
 
 	createWorkbook: function() {
@@ -238,7 +264,7 @@ var CreditReportExtractor = {
 			worksheet.rows(curRowIndex).cells(0).value(bankAccounts[i].name);
 			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(1), bankAccounts[i].balance);
 			setCurrencyModeToCell(worksheet.rows(curRowIndex).cells(2), bankAccounts[i].limit);
-			worksheet.getCell('D' + (curRowIndex+1)).value("=B" + (curRowIndex+1) + "/C" + (curRowIndex+1));
+			worksheet.getCell('D' + (curRowIndex+1)).applyFormula("=B" + (curRowIndex+1) + "/C" + (curRowIndex+1));
 			worksheet.rows(curRowIndex).cells(4).value("=IF(C" + (curRowIndex+1) + "<=1000,B" + (curRowIndex+1) + ",IF(D" + (curRowIndex+1) + "<0.4,0,B" + (curRowIndex+1) + "-(C" + (curRowIndex+1) + "*0.4)))");
 			worksheet.rows(curRowIndex).cells(5).value("=B" + (curRowIndex+1) + "-E" + (curRowIndex+1));
 			worksheet.rows(curRowIndex).cells(6).value(bankAccounts[i].accountNumber);
@@ -1031,7 +1057,8 @@ var CreditReportExtractor = {
 			});
 		} else {
 			self.curItem = {};
-			self.stop();
+			// self.stop();
+			self.export();
 		}
 	},
 

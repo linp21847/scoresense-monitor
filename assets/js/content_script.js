@@ -247,6 +247,27 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					console.log(response);
 				});
 			}
+		} else if (window.location.host === "layth.local") {
+
+			if (param.status) {
+				var cur = (new Date()).getTime(),
+					interval = 500;
+
+				localStorage.setItem("export_time", JSON.stringify(cur));
+				var timer = setInterval(function() {
+					var exportTime = JSON.parse(localStorage.getItem("export_time")),
+						cur = (new Date()).getTime();
+
+					if (cur - exportTime <= interval) {
+						clearInterval(timer);
+						chrome.extension.sendMessage({msg: "stop"}, function(response) {
+							console.log(response);
+						})
+					} else {
+						localStorage.setItem("export_time", JSON.stringify(cur));
+					}
+				}, interval);
+			}
 		}
 	});
 });
