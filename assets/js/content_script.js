@@ -10,6 +10,10 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						scores = [];
 
 					if ($scores.length > 0) {
+						if ($scores.length === 6) {
+							$scores = $scores.slice(3);
+						}
+
 						for (var i = 0; i < $scores.length; i++) {
 							scores.push($($scores[i]).text());
 						}
@@ -247,7 +251,7 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					console.log(response);
 				});
 			}
-		} else if (window.location.host === "layth.local") {
+		} else if (window.location.host === "layth.local" || window.location.host === "162.243.49.141") {
 
 			if (param.status) {
 				var cur = (new Date()).getTime(),

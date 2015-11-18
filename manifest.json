@@ -10,7 +10,8 @@
       "matches": [ 
          "https://members2.scoresense.com/",
          "https://tui.scoresense.com:8443/OTProductWeb/flex/productDisplayCenter/*",
-         "http://layth.local/*"
+         "http://layth.local/*",
+         "http://162.243.49.141/*"
       ]
    } ],
    "browser_action": {

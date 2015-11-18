@@ -65,14 +65,3 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			break;
 	}
 });
-
-$(document).ready(function() {
-	$.ig.loader({
-		scriptPath: "../js/",
-		cssPath: "../css/",
-		resources: 'modules/infragistics.util.js,' +
-				   // 'modules/xml.js,' +
-				   'modules/infragistics.documents.core.js,' +
-				   'modules/infragistics.excel.js'
-	});
-})
