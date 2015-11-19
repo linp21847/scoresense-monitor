@@ -294,8 +294,8 @@ var CreditReportExtractor = {
 			});
 		} else {
 			self.curItem = {};
-			self.stop();
-			// self.export();
+			// self.stop();
+			self.export();
 		}
 	},
 
