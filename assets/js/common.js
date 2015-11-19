@@ -202,7 +202,8 @@ var CreditReportExtractor = {
 						accountNumber: self.refine(item.accountNumber, "acc-num"),
 						balance: self.refine(item.balance, "balance"),
 						type: self.refine(item.type, "type"),
-						payStatus: self.refine(item.payStatus)
+						payStatus: self.refine(item.payStatus),
+						latePaymentDates: item.latePaymentDates
 					};
 
 			accounts.push(tempAccount);
@@ -293,8 +294,8 @@ var CreditReportExtractor = {
 			});
 		} else {
 			self.curItem = {};
-			// self.stop();
-			self.export();
+			self.stop();
+			// self.export();
 		}
 	},
 

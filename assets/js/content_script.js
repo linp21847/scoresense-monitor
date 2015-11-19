@@ -135,9 +135,84 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 
 				console.log(extractPersonalInfo($personalInfoTable));
 
+				extractLatePayment = function($container) {
+					var $internalRecords = $container.find("tr tr"),
+						$imagesContainer = $($internalRecords[0]).find("td").slice(2),
+						$dateInfoContainer = $($internalRecords[1]).find("td").slice(1),
+						$allImgs = $imagesContainer.find("img"),
+						$allMonths = $dateInfoContainer.children("img:first-child"),
+						$late30Imgs = $imagesContainer.find("img[src='/OTProductWeb/resources/base/en/images/creditreport/tradeline-30.gif']"),
+						$late60Imgs = $imagesContainer.find("img[src='/OTProductWeb/resources/base/en/images/creditreport/tradeline-60.gif']"),
+						$late90Imgs = $imagesContainer.find("img[src='/OTProductWeb/resources/base/en/images/creditreport/tradeline-90.gif']"),
+						latePaymentDates = {
+							30: "",
+							60: "",
+							90: ""
+						},
+						months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+						parseYear = function(index) {
+							var $imgs = $($dateInfoContainer[index]).find("img").slice(1),
+								year = "20";
+
+							for (var yearIndex = 0; yearIndex < $imgs.length; yearIndex ++) {
+								year += $($imgs[yearIndex]).attr('alt');
+							}
+							return year;
+						},
+						getYearFromInd = function(index) {
+							var $yearImages = $allMonths.parent().find("img[src='/OTProductWeb/resources/base/en/images/creditreport/monthsandyears/apostrophe-gray.gif']"),
+								firstYearIndex = $dateInfoContainer.index($($yearImages[0]).parent()[0]),
+								secondYearIndex = $dateInfoContainer.index($($yearImages[1]).parent()[0]),
+								year = "";
+
+							if (index > 11) {
+								year = parseInt(parseYear(firstYearIndex));
+							} else {
+								year = parseInt(parseYear(secondYearIndex)) - 1;
+							}
+							return year;
+						};
+
+					if ($late30Imgs.length === 0 && $late60Imgs.length === 0 && $late90Imgs.length === 0) {
+						return latePaymentDates;
+					}
+
+					if ($late30Imgs.length > 0) {
+						var ind = $imagesContainer.index($($late30Imgs[0]).parent());
+						latePaymentDates['30'] = $($allMonths[ind]).attr('alt');
+						if (months.indexOf(latePaymentDates['30']) === -1) {
+							latePaymentDates['30'] = months[0];
+						}
+						latePaymentDates['30'] += '-' + getYearFromInd(ind);
+					}
+
+					if ($late60Imgs.length > 0) {
+						var ind = $imagesContainer.index($($late60Imgs[0]).parent());
+						latePaymentDates['60'] = $($allMonths[ind]).attr('alt');
+						if (months.indexOf(latePaymentDates['60']) === -1) {
+							latePaymentDates['60'] = months[0];
+						}
+						latePaymentDates['60'] += '-' + getYearFromInd(ind);
+					}
+
+					if ($late90Imgs.length > 0) {
+						var ind = $imagesContainer.index($($late90Imgs[0]).parent());
+						latePaymentDates['90'] = $($allMonths[ind]).attr('alt');
+						if (months.indexOf(latePaymentDates['90']) === -1) {
+							latePaymentDates['90'] = months[0];
+						}
+						latePaymentDates['90'] += '-' + getYearFromInd(ind);
+					}
+
+					return latePaymentDates;
+				};
+
 				for (var i = 7; i < $crInfoTables.length; i += 8) {
 					var $accountInfoBlock = $($crInfoTables[i]),
-						$accountInfoPrevBlock = $accountInfoBlock.prev();
+						$accountInfoPrevBlock = $accountInfoBlock.prev(),
+						$transContainer = $($crInfoTables[i + 2]),
+						$experianContainer = $($crInfoTables[i + 4]),
+						$equifaxContainer = $($crInfoTables[i + 6]);
 
 					if ($accountInfoPrevBlock.hasClass("crTradelineGroupHeader")) {
 						$accountInfoGroupHeader = $accountInfoPrevBlock.find("b") || {};
@@ -158,6 +233,11 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 								$($($accountInfoRecords[1]).find("td")[2]).text().trim(),
 								$($($accountInfoRecords[1]).find("td")[3]).text().trim()
 							],
+							latePaymentDates: {
+								Experian: extractLatePayment($experianContainer),
+								Equifax: extractLatePayment($equifaxContainer),
+								TransUnion: extractLatePayment($transContainer)
+							},
 							balance: [
 								$($($accountInfoRecords[3]).find("td")[1]).text().trim(),
 								$($($accountInfoRecords[3]).find("td")[2]).text().trim(),
