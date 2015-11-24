@@ -111,7 +111,7 @@ var CreditReportExtractor = {
 				//	For Dev machine
 				// chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
 				//	For Staging server
-				// chrome.tabs.create({url: "/http://162.243.49.141/index.php?id=" + id});
+				chrome.tabs.create({url: "http://162.243.49.141/index.php?id=" + id});
 			},
 			error: function() {
 				console.log("Error found.");
