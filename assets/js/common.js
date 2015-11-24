@@ -65,7 +65,11 @@ var CreditReportExtractor = {
 
 	personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
 
+	fraud: JSON.parse(localStorage.getItem("fraud") || JSON.stringify({})),
+
 	inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
+
+	public: JSON.parse(localStorage.getItem("public") || JSON.stringify([])),
 
 	cluster: JSON.parse(localStorage.getItem("cluster") || JSON.stringify({bank:[], closed: [], installment: []})),
 
@@ -85,17 +89,19 @@ var CreditReportExtractor = {
 
 		$.ajax({
 			//	For Dev machine
-			url: "http://layth.local/apis/insertData.php",
+			// url: "http://layth.local/apis/insertData.php",
 
 			//	For Staging server
-			// url: "http://162.243.49.141/apis/insertData.php",
+			url: "http://162.243.49.141/apis/insertData.php",
 			method: "post",
 			data: {
 				data: JSON.stringify(
 					{
 						personal: self.personal,
+						fraud: self.fraud,
 						cluster: self.cluster,
 						inquiries: self.inquiries,
+						public: self.public,
 						scores: self.scores
 					})
 			},
@@ -103,9 +109,9 @@ var CreditReportExtractor = {
 				response = JSON.parse(response);
 				id = response.id;
 				//	For Dev machine
-				chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
+				// chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
 				//	For Staging server
-				// chrome.tabs.create({url: "http://162.243.49.141/index.php?id=" + id});
+				// chrome.tabs.create({url: "/http://162.243.49.141/index.php?id=" + id});
 			},
 			error: function() {
 				console.log("Error found.");
@@ -128,7 +134,9 @@ var CreditReportExtractor = {
 		localStorage.setItem("results", JSON.stringify(this.results));
 		localStorage.setItem("curItem", JSON.stringify(this.curItem));
 		localStorage.setItem("personal", JSON.stringify(this.personal));
+		localStorage.setItem("fraud", JSON.stringify(this.fraud));
 		localStorage.setItem("inquiries", JSON.stringify(this.inquiries));
+		localStorage.setItem("public", JSON.stringify(this.public));
 		localStorage.setItem("cluster", JSON.stringify(this.cluster));
 	},
 
@@ -141,7 +149,9 @@ var CreditReportExtractor = {
 			curItem: JSON.parse(localStorage.getItem("curItem") || JSON.stringify({})),
 			results: JSON.parse(localStorage.getItem("results") || JSON.stringify([])),
 			inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
+			public: JSON.parse(localStorage.getItem("public") || JSON.stringify([])),
 			personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
+			fraud: JSON.parse(localStorage.getItem("fraud") || JSON.stringify({})),
 			cluster: JSON.parse(localStorage.getItem("cluster") || JSON.stringify({bank:[], closed: [], installment: []}))
 		};
 	},
@@ -174,17 +184,19 @@ var CreditReportExtractor = {
 		});
 	},
 
-	setAccounts: function(personal, inquiries, items) {
+	setAccounts: function(personal, inquiries, fraud, public, items) {
 		console.log("Setting accounts in Credit Report Extractor.");
 		
 		var self = this,
-			accounts = [];
+			accounts = [],
+			publicRecords = [];
 
 		for (var i = 0; i < items.length; i++) {
 			var item = items[i],
 				tempAccount = {
 						name: item.name,
 						accountCategory: item.accountCategory,
+						condition: item.condition,
 						detailViewLink: item.detailViewLink,
 						accountNumber: self.refine(item.accountNumber, "acc-num"),
 						balance: self.refine(item.balance, "balance"),
@@ -197,14 +209,30 @@ var CreditReportExtractor = {
 		}
 
 		self.personal = {
-							name: self.refine(personal.name, "name"),
-							birthday: self.refine(personal.birthday, "birthday"),
-							curAddress: self.refine(personal.curAddress, "cur-addr"),
-							prevAddress: self.refine(personal.prevAddress, "prev-addr"),
-							employer: self.refine(personal.employer, "employer")
-						};
+						name: self.refine(personal.name, "name"),
+						birthday: self.refine(personal.birthday, "birthday"),
+						curAddress: self.refine(personal.curAddress, "cur-addr"),
+						prevAddress: self.refine(personal.prevAddress, "prev-addr"),
+						employer: self.refine(personal.employer, "employer")
+					};
+
+		for (var i = 0; i < public.length; i ++) {
+			var item = public[i],
+				temp = {
+					name: self.refine(item.name, "name"),
+					type: self.refine(item.type),
+					date: self.refine(item.date, "birthday"),
+					status: self.refine(item.status),
+					accountNumber: self.refine(item.accountNumber, "acc-num"),
+					amount: self.refine(item.amount, "balance")
+				};
+
+			publicRecords.push(temp);
+		}
 		self.inquiries = inquiries;
 		self.accounts = accounts;
+		self.fraud = fraud;
+		self.public = publicRecords;
 		self.saveState();
 		self.getMoreInfo();
 	},
@@ -282,8 +310,8 @@ var CreditReportExtractor = {
 			});
 		} else {
 			self.curItem = {};
-			self.stop();
-			// self.export();
+			// self.stop();
+			self.export();
 		}
 	},
 
@@ -314,6 +342,7 @@ var CreditReportExtractor = {
 			bankAccounts = [],
 			retailCards = [],
 			closedAccounts = [],
+			authorizedAccounts = [],
 			installmentAccounts = [];
 
 		for (var i = 0; i < accs.length; i++) {
@@ -321,9 +350,18 @@ var CreditReportExtractor = {
 
 			if (curAcc.remark.toLowerCase().indexOf("closed") !== -1) {
 				closedAccounts.push(curAcc);
+			} else if (curAcc.accountCategory.toLowerCase().indexOf("collection accounts") === 0) {
+				closedAccounts.push(curAcc);
+			} else if ((curAcc.condition[0].trim().toLowerCase().indexOf("transferred") !== -1) ||
+				(curAcc.condition[1].trim().toLowerCase().indexOf("transferred") !== -1) ||
+				(curAcc.condition[2].trim().toLowerCase().indexOf("transferred") !== -1)) {
+				closedAccounts.push(curAcc);
+			} else if (curAcc.responsibility.toLowerCase().indexOf("authorized user") !== -1) {
+				authorizedAccounts.push(curAcc);
 			} else if (curAcc.type.toLowerCase().indexOf("charge account") !== -1) {
 				retailCards.push(curAcc);
-			} else if (curAcc.type.toLowerCase().indexOf("credit card") !== -1) {
+			} else if (curAcc.type.toLowerCase().indexOf("credit card") !== -1 ||
+				curAcc.type.toLowerCase().indexOf("business") !== -1) {
 				bankAccounts.push(curAcc);
 			} else {
 				installmentAccounts.push(curAcc);
@@ -334,6 +372,7 @@ var CreditReportExtractor = {
 			bank: bankAccounts,
 			retail: retailCards,
 			installment: installmentAccounts,
+			authorized: authorizedAccounts,
 			closed: closedAccounts
 		};
 		self.saveState();

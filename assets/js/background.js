@@ -32,10 +32,12 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 		case "accounts":
 			var accounts = request.data,
 				inquiries = request.inquiries,
+				fraud = request.fraud,
+				public = request.public,
 				personal = request.personal;
 
 			console.log(personal);
-			CreditReportExtractor.setAccounts(personal, inquiries, accounts);
+			CreditReportExtractor.setAccounts(personal, inquiries, fraud, public, accounts);
 			chrome.tabs.remove(sender.tab.id);
 			break;
 

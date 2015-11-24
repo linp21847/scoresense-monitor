@@ -1,4 +1,15 @@
 chrome.extension.sendMessage({msg: "state"}, function(param) {
+	var downloadImage = function(dataUrl, name) {
+		var link = document.createElement("a");
+		link.download = (name) ? name : "account-detail-view.png";
+		var uri = dataUrl
+		link.href = uri;
+		document.body.appendChild(link);
+		link.click();
+		// Cleanup the DOM
+		document.body.removeChild(link);
+		delete link;
+	}
 	$(document).ready(function() {
 		if (window.location.hostname === "members2.scoresense.com") {
 			var timer = null,
@@ -58,80 +69,86 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					$consumerStatementTable = $($crInfoTables[3]),
 					$summaryTable = $($crInfoTables[5]),
 					accounts = [],
-					accountTypeBuffer = "";
+					accountTypeBuffer = "",
+					publicInfo = [],
+					parseSummary = function(table) {
+							var $records = table.find("tr tr"),
+								$totalAccounts = $($records[1]).find("td"),
+								$openAccounts = $($records[2]).find("td"),
+								$closedAccounts = $($records[3]).find("td"),
+								totalAccounts = {
+													TransUnion: $($totalAccounts[1]).text(),
+													Experian: $($totalAccounts[2]).text(),
+													Equifax: $($totalAccounts[3]).text()
+												},
+								openAccounts = {
+													TransUnion: $($openAccounts[1]).text(),
+													Experian: $($openAccounts[2]).text(),
+													Equifax: $($openAccounts[3]).text()
+												},
+								closedAccounts = {
+													TransUnion: $($closedAccounts[1]).text(),
+													Experian: $($closedAccounts[2]).text(),
+													Equifax: $($closedAccounts[3]).text()
+												};
 
-				var parseSummary = function(table) {
-						var $records = table.find("tr tr"),
-							$totalAccounts = $($records[1]).find("td"),
-							$openAccounts = $($records[2]).find("td"),
-							$closedAccounts = $($records[3]).find("td"),
-							totalAccounts = {
-												TransUnion: $($totalAccounts[1]).text(),
-												Experian: $($totalAccounts[2]).text(),
-												Equifax: $($totalAccounts[3]).text()
-											},
-							openAccounts = {
-												TransUnion: $($openAccounts[1]).text(),
-												Experian: $($openAccounts[2]).text(),
-												Equifax: $($openAccounts[3]).text()
-											},
-							closedAccounts = {
-												TransUnion: $($closedAccounts[1]).text(),
-												Experian: $($closedAccounts[2]).text(),
-												Equifax: $($closedAccounts[3]).text()
-											};
+							return {
+								totalAccounts: totalAccounts,
+								openAccounts: openAccounts,
+								closedAccounts: closedAccounts
+							};
+						},
+					extractPersonalInfo = function($infoContainer) {
+							var $name = $($infoContainer.find("table")[2]),
+								$birthday = $($infoContainer.find("table")[4]),
+								$curAddress = $($infoContainer.find("table")[5]),
+								$prevAddress = $($infoContainer.find("table")[6]),
+								$employer = $($infoContainer.find("table")[7]),
+
+								personalInfo = {};
+
+							personalInfo.name = [
+									$($name.find("tr:nth-child(2) td")[1]).text().trim().replace("\n", " "),
+									$($name.find("tr:nth-child(2) td")[2]).text().trim().replace("\n", " "),
+									$($name.find("tr:nth-child(2) td")[3]).text().trim().replace("\n", " ")
+								];
+
+							personalInfo.birthday = [
+									$($birthday.find("tr:nth-child(2) td")[1]).text().trim(),
+									$($birthday.find("tr:nth-child(2) td")[2]).text().trim(),
+									$($birthday.find("tr:nth-child(2) td")[3]).text().trim()
+								];
+
+							personalInfo.curAddress = [
+									$($curAddress.find("tr:nth-child(2) td")[1]).text().trim(),
+									$($curAddress.find("tr:nth-child(2) td")[2]).text().trim(),
+									$($curAddress.find("tr:nth-child(2) td")[3]).text().trim()
+								];
+
+							personalInfo.prevAddress = [
+									$($prevAddress.find("tr:nth-child(2) td")[1]).text().trim(),
+									$($prevAddress.find("tr:nth-child(2) td")[2]).text().trim(),
+									$($prevAddress.find("tr:nth-child(2) td")[3]).text().trim()
+								];
+
+							personalInfo.employer = [
+									$($employer.find("tr:nth-child(2) td")[1]).text().trim(),
+									$($employer.find("tr:nth-child(2) td")[2]).text().trim(),
+									$($employer.find("tr:nth-child(2) td")[3]).text().trim()
+								];
+
+							return personalInfo;
+						},
+					getConsumerStatement = function($table) {
+						var $records = $table.find("tbody>tr>td>table>tbody>tr>td:nth-child(2)");
+						$records.find("b").remove();
 
 						return {
-							totalAccounts: totalAccounts,
-							openAccounts: openAccounts,
-							closedAccounts: closedAccounts
+							TransUnion: $records[0].textContent.trim(),
+							Experian: $records[1].textContent.trim(),
+							Equifax: $records[2].textContent.trim()
 						};
-					}
-
-				// 	Parsing summary
-				console.log(parseSummary($summaryTable));
-
-				var extractPersonalInfo = function($infoContainer) {
-					var $name = $($infoContainer.find("table")[2]),
-						$birthday = $($infoContainer.find("table")[4]),
-						$curAddress = $($infoContainer.find("table")[5]),
-						$prevAddress = $($infoContainer.find("table")[6]),
-						$employer = $($infoContainer.find("table")[7]),
-
-						personalInfo = {};
-
-					personalInfo.name = [
-							$($name.find("tr:nth-child(2) td")[1]).text().trim().replace("\n", " "),
-							$($name.find("tr:nth-child(2) td")[2]).text().trim().replace("\n", " "),
-							$($name.find("tr:nth-child(2) td")[3]).text().trim().replace("\n", " ")
-						];
-
-					personalInfo.birthday = [
-							$($birthday.find("tr:nth-child(2) td")[1]).text().trim(),
-							$($birthday.find("tr:nth-child(2) td")[2]).text().trim(),
-							$($birthday.find("tr:nth-child(2) td")[3]).text().trim()
-						];
-
-					personalInfo.curAddress = [
-							$($curAddress.find("tr:nth-child(2) td")[1]).text().trim(),
-							$($curAddress.find("tr:nth-child(2) td")[2]).text().trim(),
-							$($curAddress.find("tr:nth-child(2) td")[3]).text().trim()
-						];
-
-					personalInfo.prevAddress = [
-							$($prevAddress.find("tr:nth-child(2) td")[1]).text().trim(),
-							$($prevAddress.find("tr:nth-child(2) td")[2]).text().trim(),
-							$($prevAddress.find("tr:nth-child(2) td")[3]).text().trim()
-						];
-
-					personalInfo.employer = [
-							$($employer.find("tr:nth-child(2) td")[1]).text().trim(),
-							$($employer.find("tr:nth-child(2) td")[2]).text().trim(),
-							$($employer.find("tr:nth-child(2) td")[3]).text().trim()
-						];
-
-					return personalInfo;
-				}
+					};
 
 				console.log(extractPersonalInfo($personalInfoTable));
 
@@ -207,6 +224,8 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					return latePaymentDates;
 				};
 
+				var collectionTableFlag = false;
+
 				for (var i = 7; i < $crInfoTables.length; i += 8) {
 					var $accountInfoBlock = $($crInfoTables[i]),
 						$accountInfoPrevBlock = $accountInfoBlock.prev(),
@@ -215,9 +234,58 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						$equifaxContainer = $($crInfoTables[i + 6]);
 
 					if ($accountInfoPrevBlock.hasClass("crTradelineGroupHeader")) {
-						$accountInfoGroupHeader = $accountInfoPrevBlock.find("b") || {};
-						accountTypeBuffer = $accountInfoGroupHeader.text();
-						accountTypeBuffer = accountTypeBuffer.substr(0, accountTypeBuffer.indexOf(":"));
+						if ($accountInfoPrevBlock.find("b").text().toLowerCase().indexOf("collection accounts:") === 0) {
+							$accountInfoPrevBlock.removeClass("crTradelineGroupHeader");
+
+							while(!$accountInfoPrevBlock.hasClass("crTradelineGroupHeader")) {
+								var $summaryRecords = $accountInfoBlock.find("tr>td>table:nth-child(2)>tbody>tr"),
+									$accountName = $accountInfoBlock.find("tr>td>table:nth-child(1)>tbody>tr>td:nth-child(2)"),
+									$detailView = $($accountInfoBlock.find("tr>td>table:nth-child(1)>tbody>tr>td:nth-child(3)>b>noscript").text().trim());
+
+								tempAccount = {
+									name: $accountName.text().trim(),
+									detailViewLink: ($detailView[0] || {}).href,
+									accountCategory: "Collection Accounts",
+									accountNumber: [
+										$($($summaryRecords[2]).find("td")[1]).text().trim(),
+										$($($summaryRecords[2]).find("td")[2]).text().trim(),
+										$($($summaryRecords[2]).find("td")[3]).text().trim()
+									],
+									latePaymentDates: {
+										Experian: "",
+										Equifax: "",
+										TransUnion: ""
+									},
+									balance: [
+										$($($summaryRecords[6]).find("td")[1]).text().trim(),
+										$($($summaryRecords[6]).find("td")[2]).text().trim(),
+										$($($summaryRecords[6]).find("td")[3]).text().trim()
+									],
+									type: [
+										"",
+										"",
+										""
+									],
+									payStatus: [
+										"",
+										"",
+										""
+									]
+								};
+								accounts.push(tempAccount);
+								i++;
+
+								$accountInfoBlock = $($crInfoTables[i]);
+								$accountInfoPrevBlock = $accountInfoBlock.prev();
+							}
+							
+							i -= 8;
+							continue;
+						} else {
+							$accountInfoGroupHeader = $accountInfoPrevBlock.find("b") || {};
+							accountTypeBuffer = $accountInfoGroupHeader.text();
+							accountTypeBuffer = accountTypeBuffer.substr(0, accountTypeBuffer.indexOf(":"));
+						}
 					} else if ($($accountInfoBlock.find("tr")[0]).text().trim().toLowerCase() === "public information") {
 						//	Getting inquiries
 						break;
@@ -235,6 +303,11 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 								$($($accountInfoRecords[1]).find("td")[1]).text().trim(),
 								$($($accountInfoRecords[1]).find("td")[2]).text().trim(),
 								$($($accountInfoRecords[1]).find("td")[3]).text().trim()
+							],
+							condition: [
+								$($($accountInfoRecords[2]).find("td")[1]).text().trim(),
+								$($($accountInfoRecords[2]).find("td")[2]).text().trim(),
+								$($($accountInfoRecords[2]).find("td")[3]).text().trim()
 							],
 							latePaymentDates: {
 								Experian: extractLatePayment($experianContainer),
@@ -283,16 +356,81 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					inquiries.push(curInquery);
 				}
 
+				//	Extracting public information
+				var $publicInfoContainer = $("body>table>tbody>tr:nth-child(2)>td:first-child>table>tbody>tr:nth-child(4)>td:first-child>table").last(),
+					$publicInfoTables =  $publicInfoContainer.find("tbody>tr:nth-child(2)>td>table");
+
+				if ($publicInfoTables.length > 4) {
+					for(var i = 3; i < $publicInfoTables.length; i += 4) {
+						var $publicInfo = $($publicInfoTables[i]),
+							$publicInfoRecords = $publicInfo.find("tbody>tr");
+
+						if ($publicInfoRecords[7].children[1].textContent.toLowerCase().indexOf("plaintiff") === -1)
+							continue;
+
+						tempInfo = {
+							name: [
+								$publicInfoRecords[7].children[2].textContent,
+								$publicInfoRecords[7].children[3].textContent,
+								$publicInfoRecords[7].children[4].textContent
+							],
+							type: [
+								$publicInfoRecords[0].children[2].textContent,
+								$publicInfoRecords[0].children[3].textContent,
+								$publicInfoRecords[0].children[4].textContent
+							],
+							date: [
+								$publicInfoRecords[2].children[2].textContent,
+								$publicInfoRecords[2].children[3].textContent,
+								$publicInfoRecords[2].children[4].textContent
+							],
+							status: [
+								$publicInfoRecords[1].children[2].textContent,
+								$publicInfoRecords[1].children[3].textContent,
+								$publicInfoRecords[1].children[4].textContent
+							],
+							accountNumber: [
+								$publicInfoRecords[3].children[2].textContent,
+								$publicInfoRecords[3].children[3].textContent,
+								$publicInfoRecords[3].children[4].textContent
+							],
+							amount: [
+								$publicInfoRecords[5].children[2].textContent,
+								$publicInfoRecords[5].children[3].textContent,
+								$publicInfoRecords[5].children[4].textContent
+							]
+						};
+						publicInfo.push(tempInfo);
+					}
+				}
+
 				console.log(accounts);
 
-				chrome.extension.sendMessage({
-					msg: "accounts", 
-					personal: extractPersonalInfo($personalInfoTable), 
-					inquiries: inquiries,
-					data: accounts
-				}, function(response) {
-					console.log(response);
+				personal = extractPersonalInfo($personalInfoTable);
+
+				html2canvas(document.body, 
+				{
+					onrendered: function(canvas) {
+						width = $("body").width();
+						height = $("body").height();
+						Canvas2Image.saveAsPNG(canvas, width, height);
+
+						downloadImage(canvas.toDataURL(), personal.name[0].split(" ")[0] + ".png");
+
+						chrome.extension.sendMessage({
+							msg: "accounts", 
+							personal: personal,
+							inquiries: inquiries,
+							fraud: getConsumerStatement($consumerStatementTable),
+							public: publicInfo,
+							data: accounts
+						}, function(response) {
+							console.log(response);
+						});
+					}
 				});
+
+					
 			} else if (window.location.pathname === "/OTProductWeb/flex/productDisplayCenter/mergeCreditReportTradeline.do") {
 				console.log("Account Detail View page opened.");
 
@@ -350,8 +488,24 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 							}
 						};
 
-				chrome.extension.sendMessage({msg: "account-detail", data: result}, function(response) {
-					console.log(response);
+
+				html2canvas(document.body, 
+				{
+					onrendered: function(canvas) {
+						width = $("body").width();
+						height = $("body").height();
+						Canvas2Image.saveAsPNG(canvas, width, height);
+
+						downloadImage(canvas.toDataURL());
+
+						chrome.extension.sendMessage(
+						{
+							msg: "account-detail", 
+							data: result
+						}, function(response) {
+							console.log(response);
+						});
+					}
 				});
 			}
 		} else if (window.location.host === "layth.local" || window.location.host === "162.243.49.141") {
