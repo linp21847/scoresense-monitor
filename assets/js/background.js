@@ -31,10 +31,11 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 
 		case "accounts":
 			var accounts = request.data,
+				inquiries = request.inquiries,
 				personal = request.personal;
 
 			console.log(personal);
-			CreditReportExtractor.setAccounts(personal, accounts);
+			CreditReportExtractor.setAccounts(personal, inquiries, accounts);
 			chrome.tabs.remove(sender.tab.id);
 			break;
 

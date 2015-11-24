@@ -50,24 +50,6 @@ var stateCodes = [["Alabama", "al", "49802"],
 					["Wisconsin", "wi", "59064"],
 					["Wyoming", "wy", "64902"]];
 
-	getStateCodeTable = function() {
-			var $table = $("<table/>", {id: "state-codes-sheet"}),
-				$tbody = $("<tbody/>");
-
-			for (var i = 0; i < stateCodes.length; i++) {
-				var stateCode = stateCodes[i],
-					$tempRec = $("<tr/>");
-
-				for (var j = 0; j < stateCode.length; j++)
-					$tempRec.append($("<td/>").text(stateCode[j]));
-
-				$tempRec.appendTo($tbody);
-			}
-
-			$tbody.appendTo($table);
-			return $table;
-		};
-
 var CreditReportExtractor = {
 	status: JSON.parse(localStorage.getItem("status") || JSON.stringify(false)),
 
@@ -82,6 +64,8 @@ var CreditReportExtractor = {
 	curItem: JSON.parse(localStorage.getItem("curItem") || JSON.stringify({})),
 
 	personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
+
+	inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
 
 	cluster: JSON.parse(localStorage.getItem("cluster") || JSON.stringify({bank:[], closed: [], installment: []})),
 
@@ -101,16 +85,17 @@ var CreditReportExtractor = {
 
 		$.ajax({
 			//	For Dev machine
-			// url: "http://layth.local/apis/insertData.php",
+			url: "http://layth.local/apis/insertData.php",
 
 			//	For Staging server
-			url: "http://162.243.49.141/apis/insertData.php",
+			// url: "http://162.243.49.141/apis/insertData.php",
 			method: "post",
 			data: {
 				data: JSON.stringify(
 					{
 						personal: self.personal,
 						cluster: self.cluster,
+						inquiries: self.inquiries,
 						scores: self.scores
 					})
 			},
@@ -118,9 +103,9 @@ var CreditReportExtractor = {
 				response = JSON.parse(response);
 				id = response.id;
 				//	For Dev machine
-				// chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
+				chrome.tabs.create({url: "http://layth.local/index.php?id=" + id});
 				//	For Staging server
-				chrome.tabs.create({url: "http://162.243.49.141/index.php?id=" + id});
+				// chrome.tabs.create({url: "http://162.243.49.141/index.php?id=" + id});
 			},
 			error: function() {
 				console.log("Error found.");
@@ -143,6 +128,7 @@ var CreditReportExtractor = {
 		localStorage.setItem("results", JSON.stringify(this.results));
 		localStorage.setItem("curItem", JSON.stringify(this.curItem));
 		localStorage.setItem("personal", JSON.stringify(this.personal));
+		localStorage.setItem("inquiries", JSON.stringify(this.inquiries));
 		localStorage.setItem("cluster", JSON.stringify(this.cluster));
 	},
 
@@ -154,6 +140,7 @@ var CreditReportExtractor = {
 			scores: JSON.parse(localStorage.getItem("scores") || JSON.stringify({})),
 			curItem: JSON.parse(localStorage.getItem("curItem") || JSON.stringify({})),
 			results: JSON.parse(localStorage.getItem("results") || JSON.stringify([])),
+			inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
 			personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
 			cluster: JSON.parse(localStorage.getItem("cluster") || JSON.stringify({bank:[], closed: [], installment: []}))
 		};
@@ -187,7 +174,7 @@ var CreditReportExtractor = {
 		});
 	},
 
-	setAccounts: function(personal, items) {
+	setAccounts: function(personal, inquiries, items) {
 		console.log("Setting accounts in Credit Report Extractor.");
 		
 		var self = this,
@@ -216,6 +203,7 @@ var CreditReportExtractor = {
 							prevAddress: self.refine(personal.prevAddress, "prev-addr"),
 							employer: self.refine(personal.employer, "employer")
 						};
+		self.inquiries = inquiries;
 		self.accounts = accounts;
 		self.saveState();
 		self.getMoreInfo();
@@ -294,8 +282,8 @@ var CreditReportExtractor = {
 			});
 		} else {
 			self.curItem = {};
-			// self.stop();
-			self.export();
+			self.stop();
+			// self.export();
 		}
 	},
 
@@ -324,6 +312,7 @@ var CreditReportExtractor = {
 		var self = this,
 			accs = self.getState().results,
 			bankAccounts = [],
+			retailCards = [],
 			closedAccounts = [],
 			installmentAccounts = [];
 
@@ -332,6 +321,8 @@ var CreditReportExtractor = {
 
 			if (curAcc.remark.toLowerCase().indexOf("closed") !== -1) {
 				closedAccounts.push(curAcc);
+			} else if (curAcc.type.toLowerCase().indexOf("charge account") !== -1) {
+				retailCards.push(curAcc);
 			} else if (curAcc.type.toLowerCase().indexOf("credit card") !== -1) {
 				bankAccounts.push(curAcc);
 			} else {
@@ -341,6 +332,7 @@ var CreditReportExtractor = {
 
 		self.cluster = {
 			bank: bankAccounts,
+			retail: retailCards,
 			installment: installmentAccounts,
 			closed: closedAccounts
 		};

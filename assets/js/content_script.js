@@ -218,6 +218,9 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						$accountInfoGroupHeader = $accountInfoPrevBlock.find("b") || {};
 						accountTypeBuffer = $accountInfoGroupHeader.text();
 						accountTypeBuffer = accountTypeBuffer.substr(0, accountTypeBuffer.indexOf(":"));
+					} else if ($($accountInfoBlock.find("tr")[0]).text().trim().toLowerCase() === "public information") {
+						//	Getting inquiries
+						break;
 					}
 
 					$accountInfoRecords = $accountInfoBlock.find("table table tr");
@@ -265,9 +268,29 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					}
 				}
 
+				//	Getting inquiries
+				var $inqueryInfoRecords = $("body>table tbody tr:nth-child(2) > td:first-child > table:nth-child(5) > tbody > tr > td > table > tbody > tr"),
+					inquiries = [];
+
+				for (var i = 0; i < $inqueryInfoRecords.length; i++) {
+					var curRecord = $($inqueryInfoRecords[i]),
+						curInquery = {
+							name: curRecord.children()[1].textContent.trim(),
+							date: curRecord.children()[2].textContent.trim(),
+							creditBureau: curRecord.children()[3].textContent.trim()
+						};
+
+					inquiries.push(curInquery);
+				}
+
 				console.log(accounts);
 
-				chrome.extension.sendMessage({msg: "accounts", personal: extractPersonalInfo($personalInfoTable), data: accounts}, function(response) {
+				chrome.extension.sendMessage({
+					msg: "accounts", 
+					personal: extractPersonalInfo($personalInfoTable), 
+					inquiries: inquiries,
+					data: accounts
+				}, function(response) {
 					console.log(response);
 				});
 			} else if (window.location.pathname === "/OTProductWeb/flex/productDisplayCenter/mergeCreditReportTradeline.do") {
