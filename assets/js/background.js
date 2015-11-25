@@ -5,13 +5,11 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			break;
 
 		case "get-data":
-			console.log("Get data request...");
-
 			chrome.tabs.query({currentWindow: true, active: true}, function(tabs) {
 				var curTab = tabs[0];
 
 				chrome.tabs.sendMessage(curTab.id, {msg: "get-data"}, function(response) {
-					console.log(response);
+					// console.log(response);
 				});
 			})
 			sendResponse({success: true});
@@ -19,13 +17,11 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 
 		case "scores":
 			var scores = request.data;
-			console.log(scores);
 			CreditReportExtractor.setCreditScores(scores);
 			break;
 
 		case "cr-url":
 			var url = request.data;
-			console.log(url);
 			CreditReportExtractor.start(url);
 			break;
 
@@ -34,18 +30,26 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 				inquiries = request.inquiries,
 				fraud = request.fraud,
 				public = request.public,
+				image = request.image,
 				personal = request.personal;
 
-			console.log(personal);
-			CreditReportExtractor.setAccounts(personal, inquiries, fraud, public, accounts);
+			CreditReportExtractor.setAccounts(personal, inquiries, fraud, public, accounts, image);
 			chrome.tabs.remove(sender.tab.id);
 			break;
 
+		case "images":
+			sendResponse({
+				name: CreditReportExtractor.personal.name,
+				data: CreditReportExtractor.images
+			});
+			break;
+
 		case "account-detail":
-			var accDetailInfo = request.data;
-			console.log(accDetailInfo);
+			var accDetailInfo = request.data,
+				image = request.image;
+
 			chrome.tabs.remove(sender.tab.id);
-			CreditReportExtractor.setAccountDetailInfo(accDetailInfo);
+			CreditReportExtractor.setAccountDetailInfo(accDetailInfo, image);
 			break;
 
 		case "exception":
@@ -53,15 +57,18 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			break;
 
 		case "export-data":
-			console.log("Export data request...");
+			// console.log("Export data request...");
 			sendResponse({success: true});
 			break;
 
 		case "stop":
-			console.log("Stop message.");
 			sendResponse({success: "ok"});
 			chrome.tabs.remove(sender.tab.id);
 			CreditReportExtractor.stop();
+			break;
+
+		case "close-tab":
+			chrome.tabs.remove(sender.tab.id);
 			break;
 
 		default:

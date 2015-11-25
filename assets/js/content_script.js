@@ -1,15 +1,4 @@
 chrome.extension.sendMessage({msg: "state"}, function(param) {
-	var downloadImage = function(dataUrl, name) {
-		var link = document.createElement("a");
-		link.download = (name) ? name : "account-detail-view.png";
-		var uri = dataUrl
-		link.href = uri;
-		document.body.appendChild(link);
-		link.click();
-		// Cleanup the DOM
-		document.body.removeChild(link);
-		delete link;
-	}
 	$(document).ready(function() {
 		if (window.location.hostname === "members2.scoresense.com") {
 			var timer = null,
@@ -31,7 +20,7 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 
 						if (prevScores.toString() === scores.toString() && scores.length === 3) {
 							chrome.extension.sendMessage({msg: "scores", data: scores}, function(res) {
-								console.log("Score set function callback");
+								// console.log("Score set function callback");
 							});
 							clearInterval(timer);
 						} else {
@@ -43,8 +32,6 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 			chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 				switch(request.msg) {
 					case "get-data":
-						console.log("Get data request from background script.");
-
 						if (window.location.hash === "#credit") {
 							$($(".credit-report-section-tab")[1]).click();
 							chrome.extension.sendMessage({msg: "cr-url", data: ($("iframe")[0].src)});
@@ -149,8 +136,6 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 							Equifax: $records[2].textContent.trim()
 						};
 					};
-
-				console.log(extractPersonalInfo($personalInfoTable));
 
 				extractLatePayment = function($container) {
 					var $internalRecords = $container.find("tr tr"),
@@ -335,7 +320,6 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						accounts.push(tempAccount);
 					else {
 						chrome.extension.sendMessage({msg: "exception", data: tempAccount}, function(res) {
-							console.log(res);
 						});
 						continue;
 					}
@@ -404,8 +388,6 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					}
 				}
 
-				console.log(accounts);
-
 				personal = extractPersonalInfo($personalInfoTable);
 
 				html2canvas(document.body, 
@@ -413,9 +395,8 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 					onrendered: function(canvas) {
 						width = $("body").width();
 						height = $("body").height();
-						Canvas2Image.saveAsPNG(canvas, width, height);
-
-						downloadImage(canvas.toDataURL(), personal.name[0].split(" ")[0] + ".png");
+						// Canvas2Image.saveAsPNG(canvas, width, height);
+						img = Canvas2Image.convertToPNG(canvas, width, height);
 
 						chrome.extension.sendMessage({
 							msg: "accounts", 
@@ -423,16 +404,20 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 							inquiries: inquiries,
 							fraud: getConsumerStatement($consumerStatementTable),
 							public: publicInfo,
+							image: {
+								src: img.src,
+								width: width,
+								height: height
+							},
 							data: accounts
 						}, function(response) {
-							console.log(response);
+							// console.log(response);
 						});
 					}
 				});
 
 					
 			} else if (window.location.pathname === "/OTProductWeb/flex/productDisplayCenter/mergeCreditReportTradeline.do") {
-				console.log("Account Detail View page opened.");
 
 				var $accountInfoRecords = $("body table:nth-child(2) table:first-child td:nth-child(2) table:nth-child(3) tr"),
 					$accountRemarkRecords = $("table:nth-child(2) td:nth-child(3) table tr"),
@@ -492,18 +477,22 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 				html2canvas(document.body, 
 				{
 					onrendered: function(canvas) {
-						width = $("body").width();
+						width =$("body").width();
 						height = $("body").height();
-						Canvas2Image.saveAsPNG(canvas, width, height);
-
-						downloadImage(canvas.toDataURL());
+						// Canvas2Image.saveAsPNG(canvas, width, height);
+						img = Canvas2Image.convertToPNG(canvas, width, height);
 
 						chrome.extension.sendMessage(
 						{
 							msg: "account-detail", 
+							image: {
+								src: img.src,//.toDataURL(),
+								width: width,
+								height: height
+							},
 							data: result
 						}, function(response) {
-							console.log(response);
+							// console.log(response);
 						});
 					}
 				});
@@ -514,18 +503,17 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 				var cur = (new Date()).getTime(),
 					interval = 500;
 
-				localStorage.setItem("export_time", JSON.stringify(cur));
+				// localStorage.setItem("export_time", JSON.stringify(cur));
 				var timer = setInterval(function() {
-					var exportTime = JSON.parse(localStorage.getItem("export_time")),
+					var exportTime = JSON.parse(localStorage.getItem("export_time") || 0),
 						cur = (new Date()).getTime();
 
 					if (cur - exportTime <= interval) {
 						clearInterval(timer);
+						localStorage.removeItem("export_time");
 						chrome.extension.sendMessage({msg: "stop"}, function(response) {
-							console.log(response);
+							// console.log(response);
 						})
-					} else {
-						localStorage.setItem("export_time", JSON.stringify(cur));
 					}
 				}, interval);
 			}

@@ -3,82 +3,14 @@
 <head>
 	<title>Credit Scroes Options</title>
 	<script src="../js/jquery.min.js"></script>
+	<script src="../js/html2canvas.js"></script>
+	<script src="../js/canvas2image.js"></script>
 	<script src="../js/common.js"></script>
 	<script src="../js/options.js"></script>
 	<link rel="stylesheet" type="text/css" href="../css/bootstrap.css">
 	<link rel="stylesheet" type="text/css" href="../css/options.css">
 </head>
 <body>
-	<div class="wrapper">
-		<div class="header">
-			<h3>Credit Report Result</h3>
-		</div>
-		<h6><span id="result-count"></span> accounts found.</h4>
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				<h3 class="panel-title">Bank Accounts</h3>
-			</div>
-			<div class="panel-body">
-				<table id="bank-accounts">
-					<thead>
-						<th>Account Name</th>
-						<th>Balance</th>
-						<th>Limit</th>
-						<th>Account Number</th>
-						<th>High Balance</th>
-						<th>Date Opened</th>
-						<th>30 Days Late</th>
-						<th>60 Days Late</th>
-						<th>90 Days Late</th>
-					</thead>
-					<tbody id="bank-account-table">
-					</tbody>
-				</table>
-			</div>
-		</div>
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				<h3 class="panel-title">Closed Accounts</h3>
-			</div>
-			<div class="panel-body">
-				<table id="closed-accounts">
-					<thead>
-						<th>Account Name</th>
-						<th>Account Type</th>
-						<th>Balance</th>
-						<th>Account Number</th>
-						<th>Payment Status</th>
-						<th>Account Status</th>
-						<th>Date Opened</th>
-						<th>30 Days Late</th>
-						<th>60 Days Late</th>
-						<th>90 Days Late</th>
-					</thead>
-					<tbody id="closed-account-table">
-					</tbody>
-				</table>
-			</div>
-		</div>
-		<div class="panel panel-default">
-			<div class="panel-heading">
-				<h3 class="panel-title">Installment Accounts</h3>
-			</div>
-			<div class="panel-body">
-				<table id="installment-accounts">
-					<thead>
-						<th>Account Name</th>
-						<th>Type of Loan</th>
-						<th>Balance</th>
-						<th>Monthly Payment</th>
-						<th>Date Opened</th>
-						<th>Lates</th>
-					</thead>
-					<tbody id="installment-account-table">
-					</tbody>
-				</table>
-			</div>
-		</div>
-		<button class="btn btn-success" id="download">Download</button>
-	</div>
+	
 </body>
 </html>

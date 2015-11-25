@@ -53,6 +53,8 @@ var stateCodes = [["Alabama", "al", "49802"],
 var CreditReportExtractor = {
 	status: JSON.parse(localStorage.getItem("status") || JSON.stringify(false)),
 
+	images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
+
 	creditReportUrl: JSON.parse(localStorage.getItem("creditReportUrl") || JSON.stringify("")),
 
 	accounts: JSON.parse(localStorage.getItem("accounts") || JSON.stringify([])),
@@ -132,6 +134,7 @@ var CreditReportExtractor = {
 		localStorage.setItem("creditReportUrl", JSON.stringify(this.creditReportUrl));
 		localStorage.setItem("accounts", JSON.stringify(this.accounts));
 		localStorage.setItem("results", JSON.stringify(this.results));
+		localStorage.setItem("images", JSON.stringify(this.images));
 		localStorage.setItem("curItem", JSON.stringify(this.curItem));
 		localStorage.setItem("personal", JSON.stringify(this.personal));
 		localStorage.setItem("fraud", JSON.stringify(this.fraud));
@@ -148,6 +151,7 @@ var CreditReportExtractor = {
 			scores: JSON.parse(localStorage.getItem("scores") || JSON.stringify({})),
 			curItem: JSON.parse(localStorage.getItem("curItem") || JSON.stringify({})),
 			results: JSON.parse(localStorage.getItem("results") || JSON.stringify([])),
+			images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
 			inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
 			public: JSON.parse(localStorage.getItem("public") || JSON.stringify([])),
 			personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
@@ -179,17 +183,17 @@ var CreditReportExtractor = {
 		}
 
 		chrome.tabs.create({url: this.creditReportUrl}, function(tab) {
-			console.log(tab);
 			self.creditReportTabId = tab.id;
 		});
 	},
 
-	setAccounts: function(personal, inquiries, fraud, public, items) {
-		console.log("Setting accounts in Credit Report Extractor.");
-		
+	setAccounts: function(personal, inquiries, fraud, public, items, image) {
 		var self = this,
 			accounts = [],
 			publicRecords = [];
+
+		self.images = [];
+		self.images.push(image);
 
 		for (var i = 0; i < items.length; i++) {
 			var item = items[i],
@@ -306,17 +310,24 @@ var CreditReportExtractor = {
 		if (self.curItem) {
 			self.saveState();
 			chrome.tabs.create({url: self.curItem.detailViewLink}, function(tab) {
-				console.log(self.curItem);
+				// console.log(self.curItem);
 			});
 		} else {
 			self.curItem = {};
 			// self.stop();
 			self.export();
+			self.downloadImage();
 		}
 	},
 
-	setAccountDetailInfo: function(detailInfo) {
+	downloadImage: function() {
+		chrome.tabs.create({url: chrome.extension.getURL("assets/html/options.html")});
+	},
+
+	setAccountDetailInfo: function(detailInfo, image) {
 		var self = this;
+
+		self.images.push(image);
 
 		self.curItem.highBalance = self.refine(detailInfo.highBalance, "balance");
 		self.curItem.limit = self.refine(detailInfo.limit, "limit");
@@ -350,7 +361,7 @@ var CreditReportExtractor = {
 
 			if (curAcc.remark.toLowerCase().indexOf("closed") !== -1) {
 				closedAccounts.push(curAcc);
-			} else if (curAcc.accountCategory.toLowerCase().indexOf("collection accounts") === 0) {
+			} else if ((curAcc.accountCategory || "").toLowerCase().indexOf("collection accounts") === 0) {
 				closedAccounts.push(curAcc);
 			} else if ((curAcc.condition[0].trim().toLowerCase().indexOf("transferred") !== -1) ||
 				(curAcc.condition[1].trim().toLowerCase().indexOf("transferred") !== -1) ||
@@ -380,107 +391,7 @@ var CreditReportExtractor = {
 		return self.cluster;
 	},
 
-	renderOptionsPage: function() {
-		var self = this,
-			bank = self.getState().cluster.bank,
-			closed = self.getState().cluster.closed,
-			installment = self.getState().cluster.installment;
-	},
-
-	renderBankAccounts: function(items, $container) {
-		var self = this;
-
-		if (!items) 
-			items = self.doCluster().bank;
-
-		if (!$container)
-			$container = $("tbody#bank-account-table");
-
-		for (var i = 0; i < items.length; i++) {
-			item = items[i];
-			$record = $("<tr/>", {class: ""});
-			$record.append(
-				$("<td/>").text(item.name),
-				$("<td/>").text("$" + item.balance),
-				$("<td/>").text(item.limit),
-				$("<td/>").text(item.accountNumber),
-				$("<td/>").text("$" + item.highBalance),
-				$("<td/>").text(item.opened),
-				$("<td/>").text(item.latePayments["30"]),
-				$("<td/>").text(item.latePayments["60"]),
-				$("<td/>").text(item.latePayments["90"])
-			);
-
-			$record.appendTo($container);
-		}
-	},
-
-	renderClosedAccounts: function(items, $container) {
-		var self = this;
-
-		if (!items) 
-			items = self.doCluster().closed;
-
-		if (!$container)
-			$container = $("tbody#closed-account-table");
-
-		for (var i = 0; i < items.length; i++) {
-			item = items[i];
-
-			if (item.remark.toLowerCase().indexOf("paid") > -1)
-				accountStatus = "Paid";
-			else if (item.remark.toLowerCase().indexOf("closed") > -1)
-				accountStatus = "Closed";
-			else
-				accountStatus = "Unknown";
-
-			$record = $("<tr/>", {class: ""});
-			$record.append(
-				$("<td/>").text(item.name),
-				$("<td/>").text(item.type),
-				$("<td/>").text("$" + item.balance),
-				$("<td/>").text(item.accountNumber),
-				$("<td/>").text(item.payStatus),
-				$("<td/>").text(accountStatus),
-				$("<td/>").text(item.opened),
-				$("<td/>").text(item.latePayments["30"]),
-				$("<td/>").text(item.latePayments["60"]),
-				$("<td/>").text(item.latePayments["90"])
-			);
-
-			$record.appendTo($container);
-		}
-	},
-
-	renderInstallmentAccounts: function(items, $container) {
-		var self = this;
-
-		if (!items) 
-			items = self.doCluster().installment;
-
-		if (!$container)
-			$container = $("tbody#installment-account-table");
-
-		for (var i = 0; i < items.length; i++) {
-			item = items[i];
-
-			$record = $("<tr/>", {class: ""});
-			$record.append(
-				$("<td/>").text(item.name),
-				$("<td/>").text(item.type),
-				$("<td/>").text("$" + item.balance),
-				$("<td/>").text(item.payment),
-				$("<td/>").text(item.opened),
-				$("<td/>").text(item.latePayments["30"] + "/30-" + 
-							item.latePayments["60"] + "/60-" + 
-							item.latePayments["90"] + "/90")//item.latePayments["30"])
-			);
-
-			$record.appendTo($container);
-		}
-	},
-
 	init: function() {
-		console.log("Credit Report Extractor initialized.");
+		// console.log("Credit Report Extractor initialized.");
 	}
 }
