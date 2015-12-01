@@ -390,13 +390,13 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 
 				personal = extractPersonalInfo($personalInfoTable);
 
-				html2canvas(document.body, 
-				{
-					onrendered: function(canvas) {
+				// html2canvas(document.body, 
+				// {
+					// onrendered: function(canvas) {
 						width = $("body").width();
 						height = $("body").height();
 						// Canvas2Image.saveAsPNG(canvas, width, height);
-						img = Canvas2Image.convertToPNG(canvas, width, height);
+						// img = Canvas2Image.convertToPNG(canvas, width, height);
 
 						chrome.extension.sendMessage({
 							msg: "accounts", 
@@ -404,17 +404,17 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 							inquiries: inquiries,
 							fraud: getConsumerStatement($consumerStatementTable),
 							public: publicInfo,
-							image: {
-								src: img.src,
-								width: width,
-								height: height
-							},
+							// image: {
+							// 	// src: img.src,
+							// 	width: width,
+							// 	height: height
+							// },
 							data: accounts
 						}, function(response) {
 							// console.log(response);
 						});
-					}
-				});
+					// }
+				// });
 
 					
 			} else if (window.location.pathname === "/OTProductWeb/flex/productDisplayCenter/mergeCreditReportTradeline.do") {
@@ -474,28 +474,28 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						};
 
 
-				html2canvas(document.body, 
-				{
-					onrendered: function(canvas) {
-						width =$("body").width();
-						height = $("body").height();
+				// html2canvas(document.body, 
+				// {
+					// onrendered: function(canvas) {
+						// width =$("body").width();
+						// height = $("body").height();
 						// Canvas2Image.saveAsPNG(canvas, width, height);
-						img = Canvas2Image.convertToPNG(canvas, width, height);
+						// img = Canvas2Image.convertToPNG(canvas, width, height);
 
 						chrome.extension.sendMessage(
 						{
 							msg: "account-detail", 
-							image: {
-								src: img.src,//.toDataURL(),
-								width: width,
-								height: height
-							},
+							// image: {
+							// 	// src: img.src,//.toDataURL(),
+							// 	width: width,
+							// 	height: height
+							// },
 							data: result
 						}, function(response) {
 							// console.log(response);
 						});
-					}
-				});
+					// }
+				// });
 			}
 		} else if (window.location.host === "layth.local" || window.location.host === "162.243.49.141") {
 

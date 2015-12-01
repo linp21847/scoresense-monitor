@@ -30,10 +30,10 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 				inquiries = request.inquiries,
 				fraud = request.fraud,
 				public = request.public,
-				image = request.image,
+				// image = request.image,
 				personal = request.personal;
 
-			CreditReportExtractor.setAccounts(personal, inquiries, fraud, public, accounts, image);
+			CreditReportExtractor.setAccounts(personal, inquiries, fraud, public, accounts);
 			chrome.tabs.remove(sender.tab.id);
 			break;
 
@@ -45,11 +45,10 @@ chrome.extension.onMessage.addListener(function(request, sender, sendResponse) {
 			break;
 
 		case "account-detail":
-			var accDetailInfo = request.data,
-				image = request.image;
+			var accDetailInfo = request.data;
 
 			chrome.tabs.remove(sender.tab.id);
-			CreditReportExtractor.setAccountDetailInfo(accDetailInfo, image);
+			CreditReportExtractor.setAccountDetailInfo(accDetailInfo);
 			break;
 
 		case "exception":

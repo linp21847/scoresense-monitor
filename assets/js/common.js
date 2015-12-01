@@ -53,7 +53,7 @@ var stateCodes = [["Alabama", "al", "49802"],
 var CreditReportExtractor = {
 	status: JSON.parse(localStorage.getItem("status") || JSON.stringify(false)),
 
-	images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
+	// images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
 
 	creditReportUrl: JSON.parse(localStorage.getItem("creditReportUrl") || JSON.stringify("")),
 
@@ -77,6 +77,7 @@ var CreditReportExtractor = {
 
 	start: function(url) {
 		this.results = [];
+		// this.images = [];
 		this.creditReportUrl = url;
 		this.status = true;
 		this.saveState();
@@ -134,7 +135,7 @@ var CreditReportExtractor = {
 		localStorage.setItem("creditReportUrl", JSON.stringify(this.creditReportUrl));
 		localStorage.setItem("accounts", JSON.stringify(this.accounts));
 		localStorage.setItem("results", JSON.stringify(this.results));
-		localStorage.setItem("images", JSON.stringify(this.images));
+		// localStorage.setItem("images", JSON.stringify(this.images));
 		localStorage.setItem("curItem", JSON.stringify(this.curItem));
 		localStorage.setItem("personal", JSON.stringify(this.personal));
 		localStorage.setItem("fraud", JSON.stringify(this.fraud));
@@ -151,7 +152,7 @@ var CreditReportExtractor = {
 			scores: JSON.parse(localStorage.getItem("scores") || JSON.stringify({})),
 			curItem: JSON.parse(localStorage.getItem("curItem") || JSON.stringify({})),
 			results: JSON.parse(localStorage.getItem("results") || JSON.stringify([])),
-			images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
+			// images: JSON.parse(localStorage.getItem("images") || JSON.stringify([])),
 			inquiries: JSON.parse(localStorage.getItem("inquiries") || JSON.stringify([])),
 			public: JSON.parse(localStorage.getItem("public") || JSON.stringify([])),
 			personal: JSON.parse(localStorage.getItem("personal") || JSON.stringify({})),
@@ -187,13 +188,13 @@ var CreditReportExtractor = {
 		});
 	},
 
-	setAccounts: function(personal, inquiries, fraud, public, items, image) {
+	setAccounts: function(personal, inquiries, fraud, public, items) {
 		var self = this,
 			accounts = [],
 			publicRecords = [];
 
-		self.images = [];
-		self.images.push(image);
+		// self.images = [];
+		// self.images.push(image);
 
 		for (var i = 0; i < items.length; i++) {
 			var item = items[i],
@@ -316,18 +317,18 @@ var CreditReportExtractor = {
 			self.curItem = {};
 			// self.stop();
 			self.export();
-			self.downloadImage();
+			// self.downloadImage();
 		}
 	},
 
-	downloadImage: function() {
-		chrome.tabs.create({url: chrome.extension.getURL("assets/html/options.html")});
-	},
+	// downloadImage: function() {
+	// 	chrome.tabs.create({url: chrome.extension.getURL("assets/html/options.html")});
+	// },
 
-	setAccountDetailInfo: function(detailInfo, image) {
+	setAccountDetailInfo: function(detailInfo) {
 		var self = this;
 
-		self.images.push(image);
+		// self.images.push(image);
 
 		self.curItem.highBalance = self.refine(detailInfo.highBalance, "balance");
 		self.curItem.limit = self.refine(detailInfo.limit, "limit");
