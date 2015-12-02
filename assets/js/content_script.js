@@ -349,7 +349,7 @@ chrome.extension.sendMessage({msg: "state"}, function(param) {
 						var $publicInfo = $($publicInfoTables[i]),
 							$publicInfoRecords = $publicInfo.find("tbody>tr");
 
-						if ($publicInfoRecords[7].children[1].textContent.toLowerCase().indexOf("plaintiff") === -1)
+						if (!$publicInfoRecords[7] || $publicInfoRecords[7].children[1].textContent.toLowerCase().indexOf("plaintiff") === -1)
 							continue;
 
 						tempInfo = {
